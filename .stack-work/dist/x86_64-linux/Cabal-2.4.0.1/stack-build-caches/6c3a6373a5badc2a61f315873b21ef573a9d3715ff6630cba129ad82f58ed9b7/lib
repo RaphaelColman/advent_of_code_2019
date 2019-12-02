@@ -1,7 +1,7 @@
 /home/raphael/haskell/advent_of_code/AdventOfCode.cabal:
-  hash: e13953d4a691e354c1de1e19096eaaf2b8e09ebf8c18c9cc22c4fd790b32c410
-  size: 340
-  modtime: 1575227349
+  hash: 05c83bc0c08f54ba4f7c25b2f49da89d989eb9ce67f9ce38946c6bdbec1520e2
+  size: 648
+  modtime: 1575322244
 /home/raphael/haskell/advent_of_code/src/RocketEquation.hs:
   hash: b93a79c3c7a89aff3593dc60f0dd88c83f13c60553faaf1d9c3fb5aa7e0ac25f
   size: 579
