@@ -1,20 +1,20 @@
 module AoC2.ProgramAlarm where
 
-intcode :: (Num a) => [a] -> [a]
-intcode xs = [1,2,3,4]
+intcode :: [Int] -> [Int]
+intcode xs = go xs xs 
+  where go [] newList = newList
+        go (a:b:c:d:xs) newList' = go (drop 4 mutateList) mutateList
+          where mutateList = (applyOperation a b c d newList')
+        go (y:ys) newList'' = newList''
 
-applyIntcode :: (Num a) => [a] -> Integer -> [a]
-applyIntcode = undefined
-applyIntcode xs index = sliceList index (index + 4) xs
-
-applyOperation :: Operation -> [Int] -> [Int]
-applyOperation (Operation o f s l) xs
-  | o == 1 = replaceInList l (f+s)
-  | o == 2 = replaceInList l (f*s)
+applyOperation :: Int -> Int -> Int -> Int -> [Int] -> [Int]
+applyOperation o f s l xs
+  | o == 1 = replaceInList l ((xs !! f) + (xs !! s)) xs
+  | o == 2 = replaceInList l ((xs !! f) * (xs !! s)) xs
   | o == 99 = xs
-  where replaceInList index value = take index xs ++ [value] ++ drop (index + 1) xs
+
+replaceInList :: Int -> a -> [a] -> [a]
+replaceInList index value xs = take index xs ++ [value] ++ drop (index + 1) xs
 
 sliceList :: Int -> Int -> [a] -> [a]
 sliceList from to xs = take (to - from + 1) (drop from xs)
-
-data Operation = Operation {operation :: Int, first :: Int, second :: Int, location :: Int} deriving (Show)
