@@ -1,8 +1,12 @@
+/home/raphael/haskell/advent_of_code/src/AoC1/RocketEquation.hs:
+  hash: c3ad8521e3c05abc66c715d4436f1eabffe0eba396f433fd27da1cf94518f24d
+  size: 584
+  modtime: 1575324539
 /home/raphael/haskell/advent_of_code/AdventOfCode.cabal:
-  hash: 05c83bc0c08f54ba4f7c25b2f49da89d989eb9ce67f9ce38946c6bdbec1520e2
-  size: 648
-  modtime: 1575322244
-/home/raphael/haskell/advent_of_code/src/RocketEquation.hs:
-  hash: b93a79c3c7a89aff3593dc60f0dd88c83f13c60553faaf1d9c3fb5aa7e0ac25f
-  size: 579
-  modtime: 1575229018
+  hash: 719d7db4c06d96b3de362104bd8e6d8e194604e4d85de1a08722c7a5dfa92800
+  size: 712
+  modtime: 1575326157
+/home/raphael/haskell/advent_of_code/src/AoC2/ProgramAlarm.hs:
+  hash: 0e23c8bb9dde9d9873cfadfd8fe96f1906532714b51a22a552a7fdf492892b2a
+  size: 88
+  modtime: 1575324179
