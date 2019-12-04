@@ -5,7 +5,8 @@ import Data.List.Split
 main :: IO ()
 main = do
   contents <- getContents
-  putStrLn $ show $ intcode (splitToIntList "," contents)
+  --putStrLn $ show $ intcode (splitToIntList "," contents)
+  putStrLn $ show $ getRightResult (splitToIntList "," contents)
 
 splitToIntList :: String -> String -> [Int]
 splitToIntList delim strList = map read $ splitOn delim strList
@@ -36,3 +37,21 @@ replaceInList index value xs = take index xs ++ [value] ++ drop (index + 1) xs
 
 sliceList :: Int -> Int -> [a] -> [a]
 sliceList from to xs = take (to - from + 1) (drop from xs)
+
+allInputs :: [Input]
+allInputs = [Input x y | x <- [1..99], y <- [1..99]]
+
+applyInputToList :: Input -> [Int] -> [Int]
+applyInputToList (Input noun verb) xs = head xs : noun : verb : drop 3 xs
+
+allResults :: [Int] -> [[Int]]
+allResults xs = map getResult allInputs
+  where getResult x = (take 3 (intcode (applyInputToList x xs)))
+
+getRightResult :: [Int] -> [[Int]]
+getRightResult xs = filter (\x -> (head x) == 19690720) (allResults xs)
+
+type Noun = Int
+type Verb = Int
+data Input = Input Noun Verb deriving (Show, Eq)
+
