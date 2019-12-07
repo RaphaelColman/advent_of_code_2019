@@ -3,11 +3,7 @@ module AoC4.SecureContainer where
 import Data.List
 
 onlyAscendingDigits :: String -> Bool
-onlyAscendingDigits i = go i True
-  where go (x:y:xs) True = go (y:xs) (y >= x)
-        go _ False = False
-        go (_:[]) b = b
-        go [] b = b
+onlyAscendingDigits = all (\(x,y) -> y >= x) . consecs
 
 hasDigitPair :: String -> Bool
 hasDigitPair = any (\(x,y) -> x == y) . consecs 
