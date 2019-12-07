@@ -1,56 +1,53 @@
 module AoC2.ProgramAlarm where
 
 import Data.List.Split
+import Data.Sequence (Seq(..)) 
+import qualified Data.Sequence as Seq
+import System.IO
 
 main :: IO ()
 main = do
-  contents <- getContents
-  --putStrLn $ show $ intcode (splitToIntList "," contents)
-  putStrLn $ show $ getRightResult (splitToIntList "," contents)
+  handle <- openFile "src/AoC2/input.txt" ReadMode  
+  contents <- hGetContents handle
+  putStrLn $ show $ runIntCode (parse contents)
+  putStrLn $ show $ findNounAndVerb (parse contents)
 
-splitToIntList :: String -> String -> [Int]
-splitToIntList delim strList = map read $ splitOn delim strList
+parse :: String -> Memory
+parse str = (Mem 0 (Seq.fromList intList))
+  where intList = map read $ splitOn "," str :: [Int]
 
-intcode :: [Int] -> [Int]
-intcode xs = go xs 0 
-  where go [] _ = []
-        go xs i
-            | i >= (length xs) = xs
-            | xs !! i == 99 = xs
-            | otherwise = go (intcodeAtIndex xs i) (i+4)
+data Memory = Mem { position :: Int, registers :: Seq Int} deriving (Show)
 
-applyOperation :: Int -> Int -> Int -> Int -> [Int] -> [Int]
-applyOperation o f s l xs
-  | o == 1 = replaceInList l ((xs !! f) + (xs !! s)) xs
-  | o == 2 = replaceInList l ((xs !! f) * (xs !! s)) xs
-  | o == 99 = error ("Should not have got opcode 99 in here: " ++ show o)
-  | otherwise = error ("Unknown opcode: " ++ show o)
+step :: Memory -> Maybe Memory
+step (Mem pos regs) = do
+  op <- Seq.lookup pos regs >>= opCode
+  [p1, p2, p3] <- traverse (flip Seq.lookup regs) [pos+1..pos+3]
+  [o1, o2] <- sequence [Seq.lookup p1 regs, Seq.lookup p2 regs]
+  pure $ Mem (pos+4) (Seq.update p3 (op o1 o2) regs)
 
-intcodeAtIndex :: [Int] -> Int -> [Int]
-intcodeAtIndex xs i = let slice = sliceList i (i+4) xs
-                      in go slice xs
-                     where go (a:b:c:d:as) xs = applyOperation a b c d xs
-                           go h i = error (show h ++ show i)
 
-replaceInList :: Int -> a -> [a] -> [a]
-replaceInList index value xs = take index xs ++ [value] ++ drop (index + 1) xs
+runIntCode :: Memory -> Maybe Memory
+runIntCode m@(Mem pos regs)
+  | Seq.lookup pos regs ==  Just 99 = Just m 
+  | otherwise = step m >>= runIntCode
 
-sliceList :: Int -> Int -> [a] -> [a]
-sliceList from to xs = take (to - from + 1) (drop from xs)
+opCode :: Num a => Int -> Maybe (a -> a -> a)
+opCode i = case i of
+             1 -> Just (+)
+             2 -> Just (*)
+             _ -> Nothing
 
-allInputs :: [Input]
-allInputs = [Input x y | x <- [1..99], y <- [1..99]]
 
-applyInputToList :: Input -> [Int] -> [Int]
-applyInputToList (Input noun verb) xs = head xs : noun : verb : drop 3 xs
+applyInputToMemory :: Input -> Memory -> Memory
+applyInputToMemory (Input noun verb) (Mem pos reg) = Mem pos (Seq.update 2 verb (Seq.update 1 noun reg))
 
-allResults :: [Int] -> [[Int]]
-allResults xs = map getResult allInputs
-  where getResult x = (take 3 (intcode (applyInputToList x xs)))
-
-getRightResult :: [Int] -> [[Int]]
-getRightResult xs = filter (\x -> (head x) == 19690720) (allResults xs)
-
+findNounAndVerb :: Memory -> Maybe Memory 
+findNounAndVerb mem = do
+  allMemories <- pure $ map (flip applyInputToMemory mem) allInputs
+  allResults <- traverse runIntCode allMemories
+  pure $ head $ filter (\(Mem _ reg) -> (Seq.lookup 0 reg) == Just 19690720) allResults
+    where allInputs = [Input x y | x <- [1..99], y <- [1..99]]
+  
 type Noun = Int
 type Verb = Int
 data Input = Input Noun Verb deriving (Show, Eq)
