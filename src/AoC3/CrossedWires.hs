@@ -81,6 +81,9 @@ stepsForLine p l = elemIndex p l
 time :: Line -> Line -> Point -> Maybe Int
 time l1 l2 p = (+) <$> (stepsForLine p l1) <*> (stepsForLine p l2)
 
+-- And Monads!!!!
 shortestTime :: Line -> Line -> [Point] -> Maybe Int
-shortestTime l1 l2 xs = ((sequence . (map (time l1 l2))) xs) >>= safeMinimum
+shortestTime l1 l2 xs = do
+  times <- (sequence . (map (time l1 l2))) xs
+  safeMinimum times
 
