@@ -2,34 +2,36 @@ module AoC3.CrossedWires where
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+import Data.List
 import Data.List.Split
+import System.IO
 
-parseInput :: String -> [[String]]
-parseInput = (map (\x -> splitOn "," x)) . (splitOn "\n")
+type Point = (Integer, Integer)
+type Line = [Point]
 
-closestIntersection :: String -> Integer
-closestIntersection = closestIntersectionImpl . parseInput
+main :: IO()
+main = do
+  handle <- openFile "src/AoC3/input.txt" ReadMode  
+  contents <- hGetContents handle
+  putStrLn $ show $ closestIntersection contents
 
-closestIntersectionImpl :: [[String]] -> Integer
-closestIntersectionImpl = minimum
-                        . (map $ manhattan (0,0))
-                        . (filter (/= (0,0)))
-                        . allCrossedPoints
+parseInput :: String -> [Line]
+parseInput = (map line) . (map (\x -> splitOn "," x)) . (lines)
 
-allCrossedPoints :: [[String]] -> [(Integer, Integer)]
-allCrossedPoints xs = map (\x -> fst x) $ M.toList $ M.filter (>1) $  freqs $ allPointsFromLines xs
+closestIntersection :: String -> Maybe Integer
+closestIntersection = safeMinimum 
+                    . map (manhattan (0,0))
+                    . allCrossings
+                    . parseInput
 
-allPointsFromLines :: [[String]] -> [(Integer, Integer)]
-allPointsFromLines xs = concat $ map line xs
-
--- I need a cartesian function. Applicatives don't work because they combine with themselves
+allCrossings :: [Line] -> [Point]
+allCrossings = concat
+              . (map (uncurry crossings))
+              . pairs
 
 crossings :: Line -> Line -> [Point]
 crossings l1 l2 = (filter (\x -> x /= (0,0)))
                 $ (S.toList $ S.intersection (S.fromList l1) (S.fromList l2))
-
-type Point = (Integer, Integer)
-type Line = [Point]
 
 line :: [String] -> Line 
 line = foldl doLine [(0,0)]
@@ -55,7 +57,14 @@ parseDirection dir = case dir of
                        'D' -> down
 
 manhattan :: (Integer, Integer) -> (Integer, Integer) -> Integer
-manhattan (a, b) (c, d) = abs $ (c-a) + (d-b)
+manhattan (a, b) (c, d) = abs((c-a)) + abs((d-b))
 
 freqs :: (Ord k, Num a) => [k] -> M.Map k a
 freqs xs = M.fromListWith (+) $ (map (\x -> (x, 1)) xs)
+
+pairs :: [a] -> [(a, a)]
+pairs l = [(x,y) | (x:ys) <- tails l, y <- ys]
+
+safeMinimum :: Ord a => [a] -> Maybe a
+safeMinimum [] = Nothing
+safeMinimum xs = Just (minimum xs)
