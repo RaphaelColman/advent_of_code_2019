@@ -13,7 +13,8 @@ main :: IO()
 main = do
   handle <- openFile "src/AoC3/input.txt" ReadMode  
   contents <- hGetContents handle
-  putStrLn $ show $ closestIntersection contents
+  --putStrLn $ show $ closestIntersection contents
+  putStrLn $ show $ shortestIntersection contents
 
 parseInput :: String -> [Line]
 parseInput = (map line) . (map (\x -> splitOn "," x)) . (lines)
@@ -23,6 +24,10 @@ closestIntersection = safeMinimum
                     . map (manhattan (0,0))
                     . allCrossings
                     . parseInput
+
+shortestIntersection :: String -> Maybe Int
+shortestIntersection input = let l1 = (parseInput input) !! 0; l2 = (parseInput input) !! 1 in
+                                 shortestTime l1 l2 (crossings l1 l2)
 
 allCrossings :: [Line] -> [Point]
 allCrossings = concat
@@ -68,3 +73,14 @@ pairs l = [(x,y) | (x:ys) <- tails l, y <- ys]
 safeMinimum :: Ord a => [a] -> Maybe a
 safeMinimum [] = Nothing
 safeMinimum xs = Just (minimum xs)
+
+stepsForLine :: Point -> Line -> Maybe Int
+stepsForLine p l = elemIndex p l
+
+-- Holy shit I get to use applicatives
+time :: Line -> Line -> Point -> Maybe Int
+time l1 l2 p = (+) <$> (stepsForLine p l1) <*> (stepsForLine p l2)
+
+shortestTime :: Line -> Line -> [Point] -> Maybe Int
+shortestTime l1 l2 xs = ((sequence . (map (time l1 l2))) xs) >>= safeMinimum
+
