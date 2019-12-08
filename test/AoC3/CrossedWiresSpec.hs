@@ -18,10 +18,10 @@ spec = do
       line ["R2", "D4", "L3"] `shouldBe` [(0,0), (1,0), (2,0), (2,-1), (2,-2), (2,-3), (2,-4), (1,-4),(0,-4),(-1,-4)]
 
     it "produces correct tuples from direction" $ do
-      up 2 (0,0) `shouldBe` [(0,1), (0,2)]
-      right 2 (1,0) `shouldBe` [(2,0), (3,0)]
-      left 3 (2,2) `shouldBe` [(1,2), (0,2), (-1,2)]
-      down 1 (0,0) `shouldBe` [(0,-1)]
+      up 2 (0,0) `shouldBe` ([(0,1), (0,2)] :: [(Integer, Integer)])
+      right 2 (1,0) `shouldBe` ([(2,0), (3,0)] :: [(Integer, Integer)])
+      left 3 (2,2) `shouldBe` ([(1,2), (0,2), (-1,2)] :: [(Integer, Integer)])
+      down 1 (0,0) `shouldBe` ([(0,-1)] :: [(Integer, Integer)])
 
     it "should calculate manhattan distance" $ do
       manhattan (3,4) (0,0) `shouldBe` 7
@@ -50,5 +50,8 @@ spec = do
       shortestIntersection "R75,D30,R83,U83,L12,D49,R71,U7,L72\nU62,R66,U55,R34,D71,R55,D58,R83" `shouldBe` Just 610
 
 
+l1 :: Line
 l1 = line ["R8","U5","L5","D3"]
+
+l2 :: Line
 l2 = line ["U7","R6","D4","L4"]

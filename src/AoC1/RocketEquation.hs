@@ -13,7 +13,7 @@ fuelRequiredSimple :: Int -> Int
 fuelRequiredSimple x = (x `div` 3) - 2
 
 fuelRequired :: Int -> Int
-fuelRequired x = go x 0
+fuelRequired mass = go mass 0
   where go x total
           | fuelRequiredSimple x <= 0 = total
           | otherwise = go (fuelRequiredSimple x) (fuelRequiredSimple  x + total)

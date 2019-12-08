@@ -60,6 +60,7 @@ parseDirection dir = case dir of
                        'L' -> left
                        'U' -> up
                        'D' -> down
+                       str -> error $ "unrecognised direction" ++ (show str)
 
 manhattan :: (Integer, Integer) -> (Integer, Integer) -> Integer
 manhattan (a, b) (c, d) = abs((c-a)) + abs((d-b))

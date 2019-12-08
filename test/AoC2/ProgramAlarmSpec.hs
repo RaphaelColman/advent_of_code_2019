@@ -2,6 +2,7 @@ module AoC2.ProgramAlarmSpec (spec) where
 
 import Test.Hspec
 import AoC2.ProgramAlarm
+import Common.Intcode
 import Data.Sequence (Seq(..)) 
 import qualified Data.Sequence as Seq
 
@@ -14,6 +15,6 @@ spec = do
 
 
 readMemory :: Maybe Memory -> Seq Int
-readMemory (Just (Mem _ r)) = r
+readMemory (Just (Mem _ r _ _)) = r
 readMemory Nothing = Seq.empty
 

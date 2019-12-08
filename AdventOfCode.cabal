@@ -14,6 +14,7 @@ library
     AoC2.ProgramAlarm
     AoC3.CrossedWires
     AoC4.SecureContainer
+    Common.Intcode
   ghc-options: -Wall -fwarn-tabs
   build-depends: base >=4.7 && <5, hspec, split, containers, regex-tdfa, regex-tdfa-text, regex 
   hs-source-dirs: src
@@ -34,5 +35,7 @@ test-suite spec
     AoC1.RocketEquationSpec
     AoC2.ProgramAlarmSpec
     AoC3.CrossedWiresSpec
+    AoC4.SecureContainerSpec
+    Common.IntcodeSpec
   default-language: Haskell2010
   build-tool-depends: hspec-discover:hspec-discover == 2.*
