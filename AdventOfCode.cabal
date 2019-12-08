@@ -29,6 +29,7 @@ test-suite spec
       base ==4.*
     , hspec ==2.*
     , AdventOfCode
+    , containers
   other-modules:
     AoC1.RocketEquationSpec
     AoC2.ProgramAlarmSpec

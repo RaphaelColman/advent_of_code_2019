@@ -39,8 +39,8 @@ crossings l1 l2 = (filter (\x -> x /= (0,0)))
                 $ (S.toList $ S.intersection (S.fromList l1) (S.fromList l2))
 
 line :: [String] -> Line 
-line = foldl doLine [(0,0)]
-  where doLine = (\x y -> x ++ ((parseDirection (head y)) (read (tail y) :: Integer) (last x)))
+line = foldl doLine [(0,0)] -- Use foldl' so it can stay lazy.
+  where doLine = (\x y -> x ++ ((parseDirection (head y)) (read (tail y) :: Integer) (last x))) --using last here is crap on linked lists. Should change this to a Data.Sequence
 
 up :: (Num a, Enum a, Num b, Enum b) => b -> (a, b) -> [(a, b)]
 up amount (startx,starty) = [(x,y) | x <- [startx], y <- [starty+1..starty + amount]]
