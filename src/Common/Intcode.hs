@@ -20,10 +20,7 @@ step m@(Mem pos regs _ _) = do
     Multiply -> multiply m
     In -> readIn m
     Out -> output m
-    Halt -> pure $ m
--- Looking up a variable number of params doesn't work because uncurry expects a tuple of fixed length.
--- We should just case based on the opCode
-
+    Halt -> pure m
 
 add :: Memory -> Maybe Memory
 add mem = threeParamOperation (+) mem
@@ -47,8 +44,7 @@ output :: Memory -> Maybe Memory
 output (Mem pos regs input out) = do
   readFrom <- Seq.lookup (pos+1) regs
   value <- Seq.lookup readFrom regs
-  newOutput <- pure $ value : out
-  pure $ Mem (pos+2) regs input (out ++ newOutput)
+  pure $ Mem (pos+2) regs input (value : out)
 
 runIntCode :: Memory -> Maybe Memory
 runIntCode m@(Mem pos regs _ _)
