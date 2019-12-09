@@ -9,10 +9,13 @@ spec :: Spec
 spec = do
   describe "Parsing opcode tests" $ do
     it "Can parse opcode" $ do
-      parseOpcode 1 `shouldBe` Just Add
-      parseOpcode 2 `shouldBe` Just Multiply
-      parseOpcode 3 `shouldBe` Just In
-      parseOpcode 4 `shouldBe` Just Out
+      parseInstruction 1 `shouldBe` Just Add
+      parseInstruction 2 `shouldBe` Just Multiply
+      parseInstruction 3 `shouldBe` Just In
+      parseInstruction 4 `shouldBe` Just Out
+
+    it "Can parse opcode with modes" $ do
+      parseOpcode 1002 `shouldBe` Just (Opcode {instruction = Multiply, modes = [Position,Immediate,Position]})
 
   describe "Test new instruction types" $ do
     it "Can input and output" $ do

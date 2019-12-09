@@ -11,10 +11,14 @@ data Memory = Mem { position :: Int,
                   } deriving (Show, Eq)
 
 data Instruction = Add | Multiply | In | Out | Halt deriving (Show, Eq, Enum, Ord)
+data Mode = Position | Immediate deriving (Show, Eq, Enum, Ord)
+data Opcode = Opcode { instruction :: Instruction,
+                      modes :: [Mode]
+                     } deriving (Show, Eq)
 
 step :: Memory -> Maybe Memory
 step m@(Mem pos regs _ _) = do
-  op <- Seq.lookup pos regs >>= parseOpcode
+  op <- Seq.lookup pos regs >>= parseInstruction
   case op of
     Add -> add m
     Multiply -> multiply m
@@ -52,10 +56,39 @@ runIntCode m@(Mem pos regs _ _)
   | otherwise = step m >>= runIntCode
 
 
-parseOpcode :: Int -> Maybe Instruction
-parseOpcode = \case
+parseInstruction :: Int -> Maybe Instruction
+parseInstruction = \case
             1 -> Just Add
             2 -> Just Multiply
             3 -> Just In
             4 -> Just Out
             _ -> Nothing
+
+parseOpcode :: Int -> Maybe Opcode
+parseOpcode code = do
+  instr <- parseInstruction i
+  modes' <- parseModes m
+  pure $ Opcode instr modes'
+  where codeStr = show code
+        split = length codeStr - 2
+        i = read (drop split codeStr) :: Int
+        m = take split codeStr
+
+
+parseModes :: String -> Maybe [Mode]
+parseModes = sequence 
+          . padList 3 (Just Position)
+          . map parseMode
+          . reverse
+
+
+parseMode :: Char -> Maybe Mode
+parseMode m = case m of
+                '0' -> Just Position
+                '1' -> Just Immediate
+                _ -> Nothing
+
+--Poor performance add values to the end of a list
+padList :: Int -> a -> [a] -> [a]
+padList i val xs = let numExtra = (i - length xs) in
+                       xs ++ (replicate numExtra val) 
