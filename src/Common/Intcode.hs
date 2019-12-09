@@ -3,13 +3,14 @@ module Common.Intcode where
 
 import Data.Sequence (Seq(..)) 
 import qualified Data.Sequence as Seq
-import Debug.Trace
 
 data Memory = Mem { position :: Int,
                     registers :: Seq Int,
                     inputs :: [Int], 
                     outputs :: [Int]
                   } deriving (Show, Eq)
+
+data Instruction = Add | Multiply | In | Out | Halt deriving (Show, Eq, Enum, Ord)
 
 step :: Memory -> Maybe Memory
 step m@(Mem pos regs _ _) = do
@@ -54,17 +55,6 @@ runIntCode m@(Mem pos regs _ _)
   | Seq.lookup pos regs ==  Just 99 = Just m 
   | otherwise = step m >>= runIntCode
 
-opCode :: Num a => Int -> Maybe (a -> a -> a)
-opCode i = case i of
-             1 -> Just (+)
-             2 -> Just (*)
-             _ -> Nothing
-
-data Instruction = Add | Multiply | In | Out | Halt deriving (Show, Eq, Enum, Ord)
-
-data Opcode = Opcode { instruction :: Instruction ,
-                      numParams :: Int 
-                     } deriving (Show, Eq)
 
 parseOpcode :: Int -> Maybe Instruction
 parseOpcode = \case
