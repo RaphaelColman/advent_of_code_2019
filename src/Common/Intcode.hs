@@ -4,7 +4,7 @@ module Common.Intcode where
 import Data.Sequence (Seq(..)) 
 import qualified Data.Sequence as Seq
 import Data.List.Split
-import Debug.Trace
+--import Debug.Trace
 
 data Memory = Mem { position :: Int,
                     registers :: Seq Int,
@@ -24,7 +24,7 @@ parse str = (Mem 0 (Seq.fromList intList) [] [])
 
 step :: Memory -> Maybe Memory
 step m@(Mem pos regs _ _) = do
-  trace ("Memory: " ++ show m) (Just (id m))
+  --trace ("Memory: " ++ show m) (Just (id m))
   op <- Seq.lookup pos regs >>= parseOpcode
   case (instruction op) of
     Add -> add m op
@@ -71,7 +71,7 @@ outputForMode (Mem pos regs _ _) (Opcode _ modes') = do
 runIntCode :: Memory -> Maybe Memory
 runIntCode m@(Mem pos regs _ _)
   | Seq.lookup pos regs ==  Just 99 = Just m 
-  | otherwise = trace ("m: " ++ show m) (step m) >>= runIntCode
+  | otherwise = step m >>= runIntCode
 
 
 parseInstruction :: Int -> Maybe Instruction

@@ -15,6 +15,7 @@ library
     AoC3.CrossedWires
     AoC4.SecureContainer
     Common.Intcode
+    AoC5.Asteroids
   ghc-options: -Wall -fwarn-tabs
   build-depends: base >=4.7 && <5, hspec, split, containers, regex-tdfa, regex-tdfa-text, regex 
   hs-source-dirs: src
@@ -37,5 +38,6 @@ test-suite spec
     AoC3.CrossedWiresSpec
     AoC4.SecureContainerSpec
     Common.IntcodeSpec
+    AoC5.AsteroidsSpec
   default-language: Haskell2010
   build-tool-depends: hspec-discover:hspec-discover == 2.*
