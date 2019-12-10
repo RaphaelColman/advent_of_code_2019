@@ -3,6 +3,7 @@ module Common.Intcode where
 
 import Data.Sequence (Seq(..)) 
 import qualified Data.Sequence as Seq
+import Debug.Trace
 
 data Memory = Mem { position :: Int,
                     registers :: Seq Int,
@@ -18,25 +19,32 @@ data Opcode = Opcode { instruction :: Instruction,
 
 step :: Memory -> Maybe Memory
 step m@(Mem pos regs _ _) = do
-  op <- Seq.lookup pos regs >>= parseInstruction
-  case op of
-    Add -> add m
-    Multiply -> multiply m
+  --inst <- Seq.lookup pos regs >>= parseInstruction
+  --pure $ trace ("inst: " ++ show inst) $ id inst
+  op <- Seq.lookup pos regs >>= parseOpcode
+  case (instruction op) of
+    Add -> add m op
+    Multiply -> trace ("calling multiply with " ++ show m ++ " " ++ show op) $ multiply m op
     In -> readIn m
     Out -> output m
     Halt -> pure m
 
-add :: Memory -> Maybe Memory
-add mem = threeParamOperation (+) mem
+add :: Memory -> Opcode -> Maybe Memory
+add mem op = threeParamOperation (+) mem op
 
-multiply :: Memory -> Maybe Memory
-multiply mem = threeParamOperation (*) mem
+multiply :: Memory -> Opcode -> Maybe Memory
+multiply mem op = threeParamOperation (*) mem op -- Make (*)/product the last parameter so we can have pointfree
 
-threeParamOperation :: (Int -> Int -> Int) -> Memory -> Maybe Memory
-threeParamOperation f (Mem pos regs input out) = do
+--Instead of taking three params, use the sum and product functions which take a list. You can use the length of the 
+--list to read the last param
+threeParamOperation :: (Int -> Int -> Int) -> Memory -> Opcode -> Maybe Memory
+threeParamOperation f (Mem pos regs input out) op = do
   [p1, p2, p3] <- traverse (flip Seq.lookup regs) [pos+1..pos+3]
-  [o1, o2] <- sequence [Seq.lookup p1 regs, Seq.lookup p2 regs]
-  pure $ Mem (pos+4) (Seq.update p3 (f o1 o2) regs) input out
+  [a1, a2, a3] <- sequence $ zipWith getForMode (modes op) [p1, p2, p3] --Don't need p3
+  pure $ Mem (pos+4) (Seq.update p3 (f a1 a2) regs) input out
+    where getForMode mode p = case mode of
+                                Immediate -> Just p
+                                Position -> Seq.lookup p regs
 
 readIn :: Memory -> Maybe Memory
 readIn (Mem pos regs input out) = do
