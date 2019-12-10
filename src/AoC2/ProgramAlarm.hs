@@ -1,6 +1,5 @@
 module AoC2.ProgramAlarm where
 
-import Data.List.Split
 import Data.Sequence() 
 import qualified Data.Sequence as Seq
 import System.IO
@@ -12,10 +11,6 @@ main = do
   contents <- hGetContents handle
   putStrLn $ show $ runIntCode (parse contents)
   putStrLn $ show $ findNounAndVerb (parse contents)
-
-parse :: String -> Memory
-parse str = (Mem 0 (Seq.fromList intList) [] [])
-  where intList = map read $ splitOn "," str :: [Int]
 
 applyInputToMemory :: Input -> Memory -> Memory
 applyInputToMemory (Input noun verb) (Mem pos reg _ _) = Mem pos (Seq.update 2 verb (Seq.update 1 noun reg)) [] []

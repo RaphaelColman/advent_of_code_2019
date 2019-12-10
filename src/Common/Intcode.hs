@@ -3,6 +3,7 @@ module Common.Intcode where
 
 import Data.Sequence (Seq(..)) 
 import qualified Data.Sequence as Seq
+import Data.List.Split
 import Debug.Trace
 
 data Memory = Mem { position :: Int,
@@ -17,16 +18,19 @@ data Opcode = Opcode { instruction :: Instruction,
                       modes :: [Mode]
                      } deriving (Show, Eq)
 
+parse :: String -> Memory
+parse str = (Mem 0 (Seq.fromList intList) [] [])
+  where intList = map read $ splitOn "," str :: [Int]
+
 step :: Memory -> Maybe Memory
 step m@(Mem pos regs _ _) = do
-  --inst <- Seq.lookup pos regs >>= parseInstruction
-  --pure $ trace ("inst: " ++ show inst) $ id inst
+  trace ("Memory: " ++ show m) (Just (id m))
   op <- Seq.lookup pos regs >>= parseOpcode
   case (instruction op) of
     Add -> add m op
-    Multiply -> trace ("calling multiply with " ++ show m ++ " " ++ show op) $ multiply m op
+    Multiply -> multiply m op
     In -> readIn m
-    Out -> output m
+    Out -> output m op
     Halt -> pure m
 
 add :: Memory -> Opcode -> Maybe Memory
@@ -40,7 +44,7 @@ multiply mem op = threeParamOperation (*) mem op -- Make (*)/product the last pa
 threeParamOperation :: (Int -> Int -> Int) -> Memory -> Opcode -> Maybe Memory
 threeParamOperation f (Mem pos regs input out) op = do
   [p1, p2, p3] <- traverse (flip Seq.lookup regs) [pos+1..pos+3]
-  [a1, a2, a3] <- sequence $ zipWith getForMode (modes op) [p1, p2, p3] --Don't need p3
+  [a1, a2, _] <- sequence $ zipWith getForMode (modes op) [p1, p2, p3] --Don't need p3
   pure $ Mem (pos+4) (Seq.update p3 (f a1 a2) regs) input out
     where getForMode mode p = case mode of
                                 Immediate -> Just p
@@ -52,16 +56,22 @@ readIn (Mem pos regs input out) = do
   writeTo <- Seq.lookup (pos+1) regs
   pure $ Mem (pos+2) (Seq.update writeTo value regs) input out
 
-output :: Memory -> Maybe Memory
-output (Mem pos regs input out) = do
-  readFrom <- Seq.lookup (pos+1) regs
-  value <- Seq.lookup readFrom regs
+output :: Memory -> Opcode -> Maybe Memory
+output m@(Mem pos regs input out) op = do
+  value <- outputForMode m op
   pure $ Mem (pos+2) regs input (value : out)
+
+outputForMode :: Memory -> Opcode -> Maybe Int
+outputForMode (Mem pos regs _ _) (Opcode _ modes') = do
+  param <- Seq.lookup (pos+1) regs
+  case head modes' of
+    Immediate -> Just param
+    Position -> Seq.lookup param regs
 
 runIntCode :: Memory -> Maybe Memory
 runIntCode m@(Mem pos regs _ _)
   | Seq.lookup pos regs ==  Just 99 = Just m 
-  | otherwise = step m >>= runIntCode
+  | otherwise = trace ("m: " ++ show m) (step m) >>= runIntCode
 
 
 parseInstruction :: Int -> Maybe Instruction
@@ -78,9 +88,9 @@ parseOpcode code = do
   modes' <- parseModes m
   pure $ Opcode instr modes'
   where codeStr = show code
-        split = length codeStr - 2
-        i = read (drop split codeStr) :: Int
-        m = take split codeStr
+        split' = length codeStr - 2
+        i = read (drop split' codeStr) :: Int
+        m = take split' codeStr
 
 
 parseModes :: String -> Maybe [Mode]
@@ -96,7 +106,6 @@ parseMode m = case m of
                 '1' -> Just Immediate
                 _ -> Nothing
 
---Poor performance add values to the end of a list
 padList :: Int -> a -> [a] -> [a]
 padList i val xs = let numExtra = (i - length xs) in
                        xs ++ (replicate numExtra val) 
