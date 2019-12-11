@@ -46,7 +46,8 @@ mem6 :: Memory
 mem6 = Mem 0 (Seq.fromList [3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9]) [10] []
 
 mem7 :: Memory
-mem7 = Mem 0 (Seq.fromList [3,3,1107,-1,8,3,4,3,99]) [0] []
+mem7 = Mem 0 (Seq.fromList [3,3,1105,-1,9,1101,0,0,12,4,12,99,1]) [0] [] --NB no tests for jumpIfTrue
+
 
 mem8 :: Memory
 mem8 = Mem 0 (Seq.fromList [3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
