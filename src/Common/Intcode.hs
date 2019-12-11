@@ -149,3 +149,5 @@ parseMode m = case m of
 padList :: Int -> a -> [a] -> [a]
 padList i val xs = let numExtra = (i - length xs) in
                        xs ++ replicate numExtra val
+
+
