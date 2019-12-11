@@ -4,7 +4,7 @@ module Common.Intcode where
 import Data.Sequence (Seq(..)) 
 import qualified Data.Sequence as Seq
 import Data.List.Split
-import Debug.Trace
+import Control.Monad
 
 data Memory = Mem { position :: Int,
                     registers :: Seq Int,
@@ -32,9 +32,7 @@ parse str = (Mem 0 (Seq.fromList intList) [] [])
 
 step :: Memory -> Maybe Memory
 step m@(Mem pos regs _ _) = do
-  trace ("Memory: " ++ show m) (Just (id m))
   op <- Seq.lookup pos regs >>= parseOpcode
-  trace ("Instruction: " ++ (show (instruction op))) (Just (id m))
   case (instruction op) of
     Add -> add m op
     Multiply -> multiply m op
@@ -82,25 +80,22 @@ outputForMode (Mem pos regs _ _) (Opcode _ modes') = do
     Position -> Seq.lookup param regs
 
 jumpIfFalse :: Memory -> Opcode -> Maybe Memory
-jumpIfFalse m@(Mem pos regs i o) op = do
+jumpIfFalse mem op = jumpOperation (\x -> x == 0) mem op
+
+jumpIfTrue :: Memory -> Opcode -> Maybe Memory
+jumpIfTrue mem op = jumpOperation (\x -> x /= 0) mem op
+
+jumpOperation :: (Int -> Bool) -> Memory -> Opcode -> Maybe Memory
+jumpOperation f m@(Mem pos regs i o) op = do
   [p1, p2] <- traverse (`Seq.lookup` regs) [pos+1..pos+2]
-  [a1, a2] <- sequence $ zipWith getForMode (modes op) [p1, p2]
-  newPointer <- if a1 == 0 then pure a2 else pure $ pos+3
+  [a1, a2] <- zipWithM getForMode (modes op) [p1, p2]
+  newPointer <- pure $ if f a1 then a2 else pos+3
   pure $ Mem newPointer regs i o
     where getForMode mode p = case mode of
                                 Immediate -> Just p
                                 Position -> Seq.lookup p regs
 
-jumpIfTrue :: Memory -> Opcode -> Maybe Memory
-jumpIfTrue m@(Mem pos regs i o) op = do
-  [p1, p2] <- traverse (`Seq.lookup` regs) [pos+1..pos+2]
-  [a1, a2] <- sequence $ zipWith getForMode (modes op) [p1, p2] --zipWithM
-  trace ("values : " ++ show [a1, a2]) pure $ id m
-  newPointer <- pure $ if a1 /= 0 then a2 else pos+3
-  pure $ Mem newPointer regs i o
-    where getForMode mode p = case mode of
-                                Immediate -> Just p
-                                Position -> Seq.lookup p regs
+
 
 lessThan :: Memory -> Opcode -> Maybe Memory
 lessThan = threeParamOperation (\a b -> if a < b then 1 else 0)
