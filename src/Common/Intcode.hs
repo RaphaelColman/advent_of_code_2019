@@ -83,12 +83,9 @@ outputForMode (Mem pos regs _ _) (Opcode _ modes') = do
 
 jumpIfFalse :: Memory -> Opcode -> Maybe Memory
 jumpIfFalse m@(Mem pos regs i o) op = do
-  test <- trace ("Jump if false: mem: " ++ show m) (pure m)
   [p1, p2] <- traverse (`Seq.lookup` regs) [pos+1..pos+2]
   [a1, a2] <- sequence $ zipWith getForMode (modes op) [p1, p2]
-  trace ("a1: " ++ show a1) (pure m)
   newPointer <- if a1 == 0 then pure a2 else pure $ pos+3
-  trace ("newPointer: " ++ show newPointer) (pure m)
   pure $ Mem newPointer regs i o
     where getForMode mode p = case mode of
                                 Immediate -> Just p
@@ -97,8 +94,9 @@ jumpIfFalse m@(Mem pos regs i o) op = do
 jumpIfTrue :: Memory -> Opcode -> Maybe Memory
 jumpIfTrue m@(Mem pos regs i o) op = do
   [p1, p2] <- traverse (`Seq.lookup` regs) [pos+1..pos+2]
-  [a1, a2] <- sequence $ zipWith getForMode (modes op) [p1, p2]
-  newPointer <- if a1 == 1 then pure a2 else pure $ pos+3
+  [a1, a2] <- sequence $ zipWith getForMode (modes op) [p1, p2] --zipWithM
+  trace ("values : " ++ show [a1, a2]) pure $ id m
+  newPointer <- pure $ if a1 /= 0 then a2 else pos+3
   pure $ Mem newPointer regs i o
     where getForMode mode p = case mode of
                                 Immediate -> Just p
