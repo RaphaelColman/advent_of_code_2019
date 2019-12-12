@@ -1,25 +1,25 @@
 {-# LANGUAGE LambdaCase                #-}
 module Common.Intcode where
 
-import Data.Sequence (Seq(..)) 
+import Data.Sequence (Seq(..))
 import qualified Data.Sequence as Seq
 import Data.List.Split
 import Control.Monad
 
 data Memory = Mem { position :: Int,
                     registers :: Seq Int,
-                    inputs :: [Int], 
+                    inputs :: [Int],
                     outputs :: [Int]
                   } deriving (Show, Eq)
 
-data Instruction = Add 
-                 | Multiply 
-                 | In 
-                 | Out 
-                 | JumpIfTrue 
-                 | JumpIfFalse 
-                 | LessThan 
-                 | Equal 
+data Instruction = Add
+                 | Multiply
+                 | In
+                 | Out
+                 | JumpIfTrue
+                 | JumpIfFalse
+                 | LessThan
+                 | Equal
                  | Halt deriving (Show, Eq, Enum, Ord)
 data Mode = Position | Immediate deriving (Show, Eq, Enum, Ord)
 data Opcode = Opcode { instruction :: Instruction,
@@ -53,13 +53,22 @@ multiply = threeParamOperation (*)
 --Instead of taking three params, use the sum and product functions which take a list. You can use the length of the 
 --list to read the last param
 threeParamOperation :: (Int -> Int -> Int) -> Memory -> Opcode -> Maybe Memory
-threeParamOperation f (Mem pos regs input out) op = do
-  [p1, p2, p3] <- traverse (`Seq.lookup` regs) [pos+1..pos+3]
-  [a1, a2, _] <- zipWithM getForMode (modes op) [p1, p2, p3]
-  pure $ Mem (pos+4) (Seq.update p3 (f a1 a2) regs) input out
+threeParamOperation f m@(Mem pos regs input out) op = do
+  [v1, v2] <- readNFromMemory 2 m op
+  outputLocation <- readThirdInPositionMode m op
+  pure $ Mem (pos+4) (Seq.update outputLocation (f v1 v2) regs) input out
+
+
+readNFromMemory :: Int -> Memory -> Opcode -> Maybe [Int]
+readNFromMemory n (Mem pos regs _ _) op = do
+  positions <- traverse (`Seq.lookup` regs) [pos+1..pos+n]
+  zipWithM getForMode (modes op) positions
     where getForMode mode p = case mode of
                                 Immediate -> Just p
                                 Position -> Seq.lookup p regs
+
+readThirdInPositionMode :: Memory -> Opcode -> Maybe Int
+readThirdInPositionMode m _ = Seq.lookup (position m + 3) (registers m)
 
 readIn :: Memory -> Maybe Memory
 readIn (Mem pos regs input out) = let value = head input in do
@@ -86,14 +95,9 @@ jumpIfTrue = jumpOperation (/= 0)
 
 jumpOperation :: (Int -> Bool) -> Memory -> Opcode -> Maybe Memory
 jumpOperation f m@(Mem pos regs i o) op = do
-  [p1, p2] <- traverse (`Seq.lookup` regs) [pos+1..pos+2]
-  [a1, a2] <- zipWithM getForMode (modes op) [p1, p2]
+  [a1, a2] <- readNFromMemory 2 m op
   let newPointer = if f a1 then a2 else pos+3
   pure $ Mem newPointer regs i o
-    where getForMode mode p = case mode of
-                                Immediate -> Just p
-                                Position -> Seq.lookup p regs
-
 
 
 lessThan :: Memory -> Opcode -> Maybe Memory
@@ -105,7 +109,7 @@ equal = threeParamOperation (\a b -> if a == b then 1 else 0)
 
 runIntCode :: Memory -> Maybe Memory
 runIntCode m@(Mem pos regs _ _)
-  | Seq.lookup pos regs ==  Just 99 = Just m 
+  | Seq.lookup pos regs ==  Just 99 = Just m
   | otherwise = step m >>= runIntCode
 
 
@@ -134,7 +138,7 @@ parseOpcode code = do
 
 
 parseModes :: String -> Maybe [Mode]
-parseModes = sequence 
+parseModes = sequence
           . padList 3 (Just Position)
           . map parseMode
           . reverse
@@ -149,5 +153,3 @@ parseMode m = case m of
 padList :: Int -> a -> [a] -> [a]
 padList i val xs = let numExtra = (i - length xs) in
                        xs ++ replicate numExtra val
-
-
