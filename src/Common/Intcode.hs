@@ -49,14 +49,14 @@ add = threeParamOperation (+)
 
 multiply :: Memory -> Opcode -> Maybe Memory
 multiply = threeParamOperation (*)
-
---Instead of taking three params, use the sum and product functions which take a list. You can use the length of the 
---list to read the last param
+--Instead of taking three params, use the sum and product functions which take a list. You can use the length of the --list to read the last param
 threeParamOperation :: (Int -> Int -> Int) -> Memory -> Opcode -> Maybe Memory
-threeParamOperation f m@(Mem pos regs input out) op = do
-  [v1, v2] <- readNFromMemory 2 m $ modes op
-  [_,_,outputLocation] <- readNFromMemoryImmediateMode 3 m
-  pure $ Mem (pos+4) (Seq.update outputLocation (f v1 v2) regs) input out
+threeParamOperation f mem op = do
+  [v1, v2] <- readNFromMemory 2 mem $ modes op
+  [_,_,outputLocation] <- readNFromMemoryImmediateMode 3 mem
+  let newMem = writeToMemory outputLocation (f v1 v2) mem
+  pure $ movePointer (pos + 4) newMem
+    where pos = position mem
 
 
 readNFromMemory :: Int -> Memory -> [Mode] -> Maybe [Int]
@@ -67,8 +67,19 @@ readNFromMemory n (Mem pos regs _ _) modes' = do
                                 Immediate -> Just p
                                 Position -> Seq.lookup p regs
 
+readNextFromMemory :: Memory -> Mode -> Maybe Int 
+readNextFromMemory mem mode = head <$> readNFromMemory 1 mem [mode]
+
 readNFromMemoryImmediateMode :: Int -> Memory -> Maybe [Int]
 readNFromMemoryImmediateMode n mem = readNFromMemory n mem $ repeat Immediate
+
+writeToMemory :: Int -> Int -> Memory -> Memory
+writeToMemory location value (Mem pos regs input out) =
+  Mem pos newRegs input out
+    where newRegs = Seq.update location value regs
+
+movePointer :: Int -> Memory -> Memory
+movePointer location (Mem _ regs input out) = Mem location regs input out
 
 
 readIn :: Memory -> Maybe Memory
@@ -78,15 +89,9 @@ readIn (Mem pos regs input out) = let value = head input in do
 
 output :: Memory -> Opcode -> Maybe Memory
 output m@(Mem pos regs input out) op = do
-  value <- outputForMode m op
+  value <- readNextFromMemory m $ head $ modes op
   pure $ Mem (pos+2) regs input (value : out)
 
-outputForMode :: Memory -> Opcode -> Maybe Int
-outputForMode (Mem pos regs _ _) (Opcode _ modes') = do
-  param <- Seq.lookup (pos+1) regs
-  case head modes' of
-    Immediate -> Just param
-    Position -> Seq.lookup param regs
 
 jumpIfFalse :: Memory -> Opcode -> Maybe Memory
 jumpIfFalse = jumpOperation (== 0)
