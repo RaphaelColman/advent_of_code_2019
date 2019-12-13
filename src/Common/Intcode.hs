@@ -54,21 +54,22 @@ multiply = threeParamOperation (*)
 --list to read the last param
 threeParamOperation :: (Int -> Int -> Int) -> Memory -> Opcode -> Maybe Memory
 threeParamOperation f m@(Mem pos regs input out) op = do
-  [v1, v2] <- readNFromMemory 2 m op
-  outputLocation <- readThirdInPositionMode m op
+  [v1, v2] <- readNFromMemory 2 m $ modes op
+  [_,_,outputLocation] <- readNFromMemoryImmediateMode 3 m
   pure $ Mem (pos+4) (Seq.update outputLocation (f v1 v2) regs) input out
 
 
-readNFromMemory :: Int -> Memory -> Opcode -> Maybe [Int]
-readNFromMemory n (Mem pos regs _ _) op = do
+readNFromMemory :: Int -> Memory -> [Mode] -> Maybe [Int]
+readNFromMemory n (Mem pos regs _ _) modes' = do
   positions <- traverse (`Seq.lookup` regs) [pos+1..pos+n]
-  zipWithM getForMode (modes op) positions
+  zipWithM getForMode modes' positions
     where getForMode mode p = case mode of
                                 Immediate -> Just p
                                 Position -> Seq.lookup p regs
 
-readThirdInPositionMode :: Memory -> Opcode -> Maybe Int
-readThirdInPositionMode m _ = Seq.lookup (position m + 3) (registers m)
+readNFromMemoryImmediateMode :: Int -> Memory -> Maybe [Int]
+readNFromMemoryImmediateMode n mem = readNFromMemory n mem $ repeat Immediate
+
 
 readIn :: Memory -> Maybe Memory
 readIn (Mem pos regs input out) = let value = head input in do
@@ -95,7 +96,7 @@ jumpIfTrue = jumpOperation (/= 0)
 
 jumpOperation :: (Int -> Bool) -> Memory -> Opcode -> Maybe Memory
 jumpOperation f m@(Mem pos regs i o) op = do
-  [a1, a2] <- readNFromMemory 2 m op
+  [a1, a2] <- readNFromMemory 2 m $ modes op
   let newPointer = if f a1 then a2 else pos+3
   pure $ Mem newPointer regs i o
 
