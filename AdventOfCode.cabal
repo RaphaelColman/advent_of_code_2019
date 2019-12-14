@@ -1,5 +1,5 @@
--- AdventOfCode.cabal
-name: AdventOfCode 
+cabal-version: >=1.10
+name: AdventOfCode
 version: 0.1.0.0
 license-file: LICENSE
 author: Raffles
@@ -9,35 +9,42 @@ build-type: Simple
 cabal-version: >=1.10
 
 library
-  exposed-modules:
-    AoC1.RocketEquation
-    AoC2.ProgramAlarm
-    AoC3.CrossedWires
-    AoC4.SecureContainer
-    Common.Intcode
-    AoC5.Asteroids
-  ghc-options: -Wall -fwarn-tabs
-  build-depends: base >=4.7 && <5, hspec, split, containers, regex-tdfa, regex-tdfa-text, regex 
-  hs-source-dirs: src
-  default-language: Haskell2010
+    exposed-modules:
+        AoC1.RocketEquation
+        AoC2.ProgramAlarm
+        AoC3.CrossedWires
+        AoC4.SecureContainer
+        Common.Intcode
+        AoC5.Asteroids
+        Common.Utils
+        AoC6.OrbitMap
+    hs-source-dirs: src
+    default-language: Haskell2010
+    ghc-options: -Wall -fwarn-tabs
+    build-depends:
+        base >=4.7 && <5,
+        hspec -any,
+        split -any,
+        containers -any,
+        array -any
 
 test-suite spec
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  hs-source-dirs:
-    test
-  ghc-options: -Wall
-  build-depends:
-      base ==4.*
-    , hspec ==2.*
-    , AdventOfCode
-    , containers
-  other-modules:
-    AoC1.RocketEquationSpec
-    AoC2.ProgramAlarmSpec
-    AoC3.CrossedWiresSpec
-    AoC4.SecureContainerSpec
-    Common.IntcodeSpec
-    AoC5.AsteroidsSpec
-  default-language: Haskell2010
-  build-tool-depends: hspec-discover:hspec-discover == 2.*
+    type: exitcode-stdio-1.0
+    main-is: Spec.hs
+    build-tool-depends: hspec-discover:hspec-discover ==2.*
+    hs-source-dirs: test
+    other-modules:
+        AoC1.RocketEquationSpec
+        AoC2.ProgramAlarmSpec
+        AoC3.CrossedWiresSpec
+        AoC4.SecureContainerSpec
+        Common.IntcodeSpec
+        AoC5.AsteroidsSpec
+        AoC6.OrbitMapSpec
+    default-language: Haskell2010
+    ghc-options: -Wall
+    build-depends:
+        base ==4.*,
+        hspec ==2.*,
+        AdventOfCode -any,
+        containers -any
