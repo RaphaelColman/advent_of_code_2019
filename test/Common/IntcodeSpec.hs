@@ -19,7 +19,7 @@ spec = do
 
   describe "Test new instruction types" $ do
     it "Can input and output" $ do
-      runIntCode (Mem 0 (Seq.fromList [3,0,4,0,99]) [3] []) `shouldBe` Just (Mem 4 (Seq.fromList [3,0,4,0,99]) [3] [3])
+      runIntCode (Mem 0 (Seq.fromList [3,0,4,0,99]) [3] []) `shouldBe` Just (Mem 4 (Seq.fromList [3,0,4,0,99]) [] [3])
     
     it "Can perform operation with modes" $ do
       step multiplyWithModes `shouldBe` Just expectedResultFroMultiplyWithModes

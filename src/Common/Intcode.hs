@@ -85,7 +85,7 @@ movePointer location (Mem _ regs input out) = Mem location regs input out
 readIn :: Memory -> Maybe Memory
 readIn (Mem pos regs input out) = let value = head input in do
   writeTo <- Seq.lookup (pos+1) regs
-  pure $ Mem (pos+2) (Seq.update writeTo value regs) input out
+  pure $ Mem (pos+2) (Seq.update writeTo value regs) (tail input) out
 
 output :: Memory -> Opcode -> Maybe Memory
 output m@(Mem pos regs input out) op = do
