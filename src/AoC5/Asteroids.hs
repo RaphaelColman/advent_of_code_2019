@@ -2,14 +2,13 @@ module AoC5.Asteroids where
 
 import System.IO
 import Common.Intcode
-import Debug.Trace
 
 main :: IO ()
 main = do
   handle <- openFile "src/AoC5/input.txt" ReadMode  
   contents <- hGetContents handle
-  putStrLn $ show $ runIntCode $ addInput 1 $ parse contents
-  putStrLn $ show $ runIntCode $ addInput 5 $ parse contents
+  print $ runIntCode $ addInput 1 $ parse contents
+  print $ runIntCode $ addInput 5 $ parse contents
 
 
 addInput :: Int -> Memory -> Memory
