@@ -16,6 +16,7 @@ main = do
   handle <- openFile "src/AoC7/input.txt" ReadMode
   contents <- hGetContents handle
   print $ findBestPhaseSequence $ parseToList contents
+  print $ findBestPhaseSequenceFeedbackLoop $ parseToList contents
 
 
 data Amplifiers = Amplifiers {position :: Int, initialInput :: Int, amplifiers :: Seq Memory, phaseSequence :: [Int]} deriving (Eq, Show)
