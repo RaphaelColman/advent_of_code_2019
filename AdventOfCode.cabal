@@ -19,6 +19,7 @@ library
         Common.Utils
         AoC6.OrbitMap
         AoC7.Amplification
+        AoC8.SpaceImageFormat
     hs-source-dirs: src
     default-language: Haskell2010
     ghc-options: -Wall -fwarn-tabs
@@ -43,6 +44,7 @@ test-suite spec
         AoC5.AsteroidsSpec
         AoC6.OrbitMapSpec
         AoC7.AmplificationSpec
+        AoC8.SpaceImageFormatSpec
     default-language: Haskell2010
     ghc-options: -Wall
     build-depends:
