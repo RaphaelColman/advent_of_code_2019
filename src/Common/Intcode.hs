@@ -30,6 +30,12 @@ parse :: String -> Memory
 parse str = Mem 0 (Seq.fromList intList) [] []
   where intList = map read $ splitOn "," str :: [Int]
 
+intcodeHalted :: Memory -> Bool
+intcodeHalted (Mem pos regs _ _) = let op = instruction <$> (Seq.lookup pos regs >>= parseOpcode) in
+  case op of
+    Just Halt -> True
+    _ -> False
+
 step :: Memory -> Maybe Memory
 step m@(Mem pos regs _ _) = do
   op <- Seq.lookup pos regs >>= parseOpcode
@@ -118,6 +124,10 @@ runIntCode m@(Mem pos regs _ _)
   | Seq.lookup pos regs ==  Just 99 = Just m
   | otherwise = step m >>= runIntCode
 
+--NB this overwrites existing inputs. Maybe it should add them?
+runIntCodeWithInput :: [Int] -> Memory -> Maybe Memory
+runIntCodeWithInput newInput' (Mem pos regs _ out') = let newMem = Mem pos regs newInput' out' in
+  runIntCode newMem
 
 parseInstruction :: Int -> Maybe Instruction
 parseInstruction = \case
