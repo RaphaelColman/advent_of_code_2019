@@ -30,6 +30,18 @@ parse :: String -> Memory
 parse str = Mem 0 (Seq.fromList intList) [] []
   where intList = map read $ splitOn "," str :: [Int]
 
+intcodeHalted :: Memory -> Bool
+intcodeHalted (Mem pos regs _ _) = let op = instruction <$> (Seq.lookup pos regs >>= parseOpcode) in
+  case op of
+    Just Halt -> True
+    _ -> False
+
+awaitingInput :: Memory -> Bool
+awaitingInput (Mem pos regs in' _) = let op = instruction <$> (Seq.lookup pos regs >>= parseOpcode) in
+  case op of
+    Just In -> null in'
+    _ -> False
+
 step :: Memory -> Maybe Memory
 step m@(Mem pos regs _ _) = do
   op <- Seq.lookup pos regs >>= parseOpcode
@@ -37,7 +49,7 @@ step m@(Mem pos regs _ _) = do
     Add -> add m op
     Multiply -> multiply m op
     In -> readIn m
-    Out -> output m op
+    Out -> writeToOutput m op
     JumpIfFalse -> jumpIfFalse m op
     JumpIfTrue -> jumpIfTrue m op
     LessThan -> lessThan m op
@@ -67,7 +79,7 @@ readNFromMemory n (Mem pos regs _ _) modes' = do
                                 Immediate -> Just p
                                 Position -> Seq.lookup p regs
 
-readNextFromMemory :: Memory -> Mode -> Maybe Int 
+readNextFromMemory :: Memory -> Mode -> Maybe Int
 readNextFromMemory mem mode = head <$> readNFromMemory 1 mem [mode]
 
 readNFromMemoryImmediateMode :: Int -> Memory -> Maybe [Int]
@@ -87,8 +99,8 @@ readIn (Mem pos regs input out) = let value = head input in do
   writeTo <- Seq.lookup (pos+1) regs
   pure $ Mem (pos+2) (Seq.update writeTo value regs) (tail input) out
 
-output :: Memory -> Opcode -> Maybe Memory
-output m@(Mem pos regs input out) op = do
+writeToOutput :: Memory -> Opcode -> Maybe Memory
+writeToOutput m@(Mem pos regs input out) op = do
   value <- readNextFromMemory m $ head $ modes op
   pure $ Mem (pos+2) regs input (value : out)
 
@@ -116,8 +128,15 @@ equal = threeParamOperation (\a b -> if a == b then 1 else 0)
 runIntCode :: Memory -> Maybe Memory
 runIntCode m@(Mem pos regs _ _)
   | Seq.lookup pos regs ==  Just 99 = Just m
+  | awaitingInput m = Just m
   | otherwise = step m >>= runIntCode
 
+runIntCodeWithInput :: [Int] -> Memory -> Maybe Memory
+runIntCodeWithInput input' (Mem pos regs existingInput out') = let newMem = Mem pos regs (existingInput ++ input') out' in
+  runIntCode newMem
+
+appendInput :: Memory -> Int -> Memory
+appendInput (Mem pos regs in' out') xs = Mem pos regs (xs : in') out'
 
 parseInstruction :: Int -> Maybe Instruction
 parseInstruction = \case
