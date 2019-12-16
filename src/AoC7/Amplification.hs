@@ -69,7 +69,7 @@ halted amps = let lastAmp = seqLast (amplifiers amps) in
 runWithPhaseSequence :: PhaseSequence -> [Int] -> Maybe Int
 runWithPhaseSequence phaseSeq registers' = foldl' doRunIntcode (Just 0) phaseSeq
     where doRunIntcode :: Maybe Int -> Int -> Maybe Int
-          doRunIntcode (Just output') phase = runIntCodeAndReadOutput (Mem 0 (Seq.fromList registers') [phase, output'] [])
+          doRunIntcode (Just output') phase = runIntCodeAndReadOutput (Mem 0 (Seq.fromList registers') [phase, output'] [] 0)
           doRunIntcode Nothing _ = Nothing
 
 runIntCodeAndReadOutput :: Memory -> Maybe Int
@@ -92,4 +92,4 @@ parseToList :: String -> [Int]
 parseToList = map read . splitOn ","
 
 wrapMemory :: [Int] -> Memory
-wrapMemory registers' = Mem 0 (Seq.fromList registers') [] []
+wrapMemory registers' = Mem 0 (Seq.fromList registers') [] [] 0

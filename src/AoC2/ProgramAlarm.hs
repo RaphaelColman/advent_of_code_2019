@@ -13,13 +13,13 @@ main = do
   putStrLn $ show $ findNounAndVerb (parse contents)
 
 applyInputToMemory :: Input -> Memory -> Memory
-applyInputToMemory (Input noun verb) (Mem pos reg _ _) = Mem pos (Seq.update 2 verb (Seq.update 1 noun reg)) [] []
+applyInputToMemory (Input noun verb) (Mem pos reg _ _ relBase) = Mem pos (Seq.update 2 verb (Seq.update 1 noun reg)) [] [] relBase
 
 findNounAndVerb :: Memory -> Maybe Memory 
 findNounAndVerb mem = do
   allMemories <- pure $ map (flip applyInputToMemory mem) allInputs
   allResults <- traverse runIntCode allMemories
-  pure $ head $ filter (\(Mem _ reg _ _) -> (Seq.lookup 0 reg) == Just 19690720) allResults
+  pure $ head $ filter (\(Mem _ reg _ _ _) -> (Seq.lookup 0 reg) == Just 19690720) allResults
     where allInputs = [Input x y | x <- [1..99], y <- [1..99]]
   
 type Noun = Int
