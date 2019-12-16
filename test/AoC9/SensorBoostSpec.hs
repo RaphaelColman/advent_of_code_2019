@@ -10,10 +10,10 @@ spec :: Spec
 spec = 
   describe "Relative mode features" $ do
     it "Can produce copy of itself" $
-      registers <$> runIntCode (wrapMemory [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99] []) `shouldBe` Just (Seq.fromList [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99])
+      outputs <$> runIntCode (wrapMemory [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99] []) `shouldBe` Just (reverse [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99])
 
     it "Outputs 16-digit number" $
-      outputs <$> runIntCode (wrapMemory [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99] []) `shouldBe` Just [9999999999999999]
+      outputs <$> runIntCode (wrapMemory [1102,34915192,34915192,7,4,7,99,0] []) `shouldBe` Just [1219070632396864]
 
     it "Outputs large number" $
-      outputs <$> runIntCode (wrapMemory [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99] []) `shouldBe` Just [1125899906842624]
+      outputs <$> runIntCode (wrapMemory [104,1125899906842624,99] []) `shouldBe` Just [1125899906842624]

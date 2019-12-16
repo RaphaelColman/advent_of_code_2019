@@ -5,6 +5,8 @@ import Data.Sequence (Seq(..))
 import qualified Data.Sequence as Seq
 import Data.List.Split
 import Control.Monad
+import Common.Utils
+import Debug.Trace
 
 data Memory = Mem { position :: Int,
                     registers :: Seq Int,
@@ -21,8 +23,9 @@ data Instruction = Add
                  | JumpIfFalse
                  | LessThan
                  | Equal
+                 | AdjustRelativeBase
                  | Halt deriving (Show, Eq, Enum, Ord)
-data Mode = Position | Immediate deriving (Show, Eq, Enum, Ord)
+data Mode = Position | Immediate | Relative deriving (Show, Eq, Enum, Ord)
 data Opcode = Opcode { instruction :: Instruction,
                       modes :: [Mode]
                      } deriving (Show, Eq)
@@ -45,16 +48,18 @@ awaitingInput (Mem pos regs in' _ _) = let op = instruction <$> (Seq.lookup pos 
 
 step :: Memory -> Maybe Memory
 step m@(Mem pos regs _ _ _) = do
-  op <- Seq.lookup pos regs >>= parseOpcode
+  --op <- Seq.lookup pos regs >>= parseOpcode
+  op <- trace ("Memory: " ++ show m) Seq.lookup pos regs >>= parseOpcode
   case instruction op of
     Add -> add m op
     Multiply -> multiply m op
-    In -> readIn m
+    In -> readIn m op
     Out -> writeToOutput m op
     JumpIfFalse -> jumpIfFalse m op
     JumpIfTrue -> jumpIfTrue m op
     LessThan -> lessThan m op
     Equal -> equal m op
+    AdjustRelativeBase -> adjustRelativeBase m op
     Halt -> pure m
 
 add :: Memory -> Opcode -> Maybe Memory
@@ -67,38 +72,47 @@ threeParamOperation :: (Int -> Int -> Int) -> Memory -> Opcode -> Maybe Memory
 threeParamOperation f mem op = do
   [v1, v2] <- readNFromMemory 2 mem $ modes op
   [_,_,outputLocation] <- readNFromMemoryImmediateMode 3 mem
-  let newMem = writeToMemory outputLocation (f v1 v2) mem
+  let newPutLocation = if last (modes op) == Relative then outputLocation + relativeBase mem else outputLocation --This is janky. It relies on the 3rd parameter always being the 'write' one
+  let newMem = trace ("outputLocation: " ++ show outputLocation) writeToMemory newPutLocation (f v1 v2) mem
   pure $ movePointer (pos + 4) newMem
     where pos = position mem
 
+adjustRelativeBase :: Memory -> Opcode -> Maybe Memory
+adjustRelativeBase mem@(Mem pos' regs' input' output' relBase) op = do
+  x <- readNextFromMemory mem $ head $ modes op
+  let newRelativeBase = relBase + x
+  pure $ Mem (pos'+2) regs' input' output' newRelativeBase
 
 readNFromMemory :: Int -> Memory -> [Mode] -> Maybe [Int]
-readNFromMemory n (Mem pos regs _ _ _) modes' = do
-  positions <- traverse (`Seq.lookup` regs) [pos+1..pos+n]
+readNFromMemory n (Mem pos regs _ _ relBase) modes' = do
+  let positions = map (flip (seqLookupWithDefault 0) regs) [pos+1..pos+n]
   zipWithM getForMode modes' positions
     where getForMode mode p = case mode of
                                 Immediate -> Just p
-                                Position -> Seq.lookup p regs
+                                Position -> Just $ seqLookupWithDefault 0 p regs
+                                Relative -> Just $ seqLookupWithDefault 0 (p + relBase) regs
 
 readNextFromMemory :: Memory -> Mode -> Maybe Int
 readNextFromMemory mem mode = head <$> readNFromMemory 1 mem [mode]
 
+--Rename this to 'readForWriting' and incorporate relative mode
 readNFromMemoryImmediateMode :: Int -> Memory -> Maybe [Int]
 readNFromMemoryImmediateMode n mem = readNFromMemory n mem $ repeat Immediate
 
 writeToMemory :: Int -> Int -> Memory -> Memory
 writeToMemory location value (Mem pos regs input out relativeBase') =
   Mem pos newRegs input out relativeBase'
-    where newRegs = Seq.update location value regs
+    where newRegs = seqUpdateAndExtend location value regs
 
 movePointer :: Int -> Memory -> Memory
 movePointer location (Mem _ regs input out relBase) = Mem location regs input out relBase
 
 
-readIn :: Memory -> Maybe Memory
-readIn (Mem pos regs input out relBase) = let value = head input in do
-  writeTo <- Seq.lookup (pos+1) regs
-  pure $ Mem (pos+2) (Seq.update writeTo value regs) (tail input) out relBase
+readIn :: Memory -> Opcode -> Maybe Memory
+readIn (Mem pos regs input out relBase) op = let value = head input in do
+  let v = seqLookupWithDefault 0 (pos+1) regs
+  let writeTo = if head (modes op) == Relative then relBase + v else v
+  pure $ Mem (pos+2) (seqUpdateAndExtend writeTo value regs) (tail input) out relBase
 
 writeToOutput :: Memory -> Opcode -> Maybe Memory
 writeToOutput m@(Mem pos regs input out relBase) op = do
@@ -149,6 +163,7 @@ parseInstruction = \case
             6 -> Just JumpIfFalse
             7 -> Just LessThan
             8 -> Just Equal
+            9 -> Just AdjustRelativeBase
             99 -> Just Halt
             _ -> Nothing
 
@@ -174,6 +189,7 @@ parseMode :: Char -> Maybe Mode
 parseMode m = case m of
                 '0' -> Just Position
                 '1' -> Just Immediate
+                '2' -> Just Relative
                 _ -> Nothing
 
 padList :: Int -> a -> [a] -> [a]

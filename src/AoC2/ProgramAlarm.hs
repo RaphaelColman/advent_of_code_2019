@@ -17,7 +17,7 @@ applyInputToMemory (Input noun verb) (Mem pos reg _ _ relBase) = Mem pos (Seq.up
 
 findNounAndVerb :: Memory -> Maybe Memory 
 findNounAndVerb mem = do
-  allMemories <- pure $ map (flip applyInputToMemory mem) allInputs
+  allMemories <- pure $ (map (flip applyInputToMemory mem) allInputs)
   allResults <- traverse runIntCode allMemories
   pure $ head $ filter (\(Mem _ reg _ _ _) -> (Seq.lookup 0 reg) == Just 19690720) allResults
     where allInputs = [Input x y | x <- [1..99], y <- [1..99]]
