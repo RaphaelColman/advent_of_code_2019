@@ -8,3 +8,4 @@ main = do
     handle <- openFile "src/AoC9/input.txt" ReadMode
     contents <- hGetContents handle
     print $ runIntCodeWithInput [1] $ parse contents
+    print $ runIntCodeWithInput [2] $ parse contents

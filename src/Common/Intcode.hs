@@ -48,8 +48,8 @@ awaitingInput (Mem pos regs in' _ _) = let op = instruction <$> (Seq.lookup pos 
 
 step :: Memory -> Maybe Memory
 step m@(Mem pos regs _ _ _) = do
-  --op <- Seq.lookup pos regs >>= parseOpcode
-  op <- trace ("Memory: " ++ show m) Seq.lookup pos regs >>= parseOpcode
+  op <- Seq.lookup pos regs >>= parseOpcode
+  --op <- trace ("Memory: " ++ show m) Seq.lookup pos regs >>= parseOpcode
   case instruction op of
     Add -> add m op
     Multiply -> multiply m op
@@ -73,7 +73,7 @@ threeParamOperation f mem op = do
   [v1, v2] <- readNFromMemory 2 mem $ modes op
   [_,_,outputLocation] <- readNFromMemoryImmediateMode 3 mem
   let newPutLocation = if last (modes op) == Relative then outputLocation + relativeBase mem else outputLocation --This is janky. It relies on the 3rd parameter always being the 'write' one
-  let newMem = trace ("outputLocation: " ++ show outputLocation) writeToMemory newPutLocation (f v1 v2) mem
+  let newMem = writeToMemory newPutLocation (f v1 v2) mem
   pure $ movePointer (pos + 4) newMem
     where pos = position mem
 
