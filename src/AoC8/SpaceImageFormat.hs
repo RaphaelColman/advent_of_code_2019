@@ -15,7 +15,7 @@ main = do
   handle <- openFile "src/AoC8/input.txt" ReadMode
   contents <- hGetContents handle
   print $ onesTimesTwos $ spaceImageFormat $ parse contents
-  print $ layerToString $ resolveLayers $ makeLayers $ parse contents
+  putStr $ layerToString $ resolveLayers $ makeLayers $ parse contents
 
 parse :: String -> [Int]
 parse = map digitToInt
@@ -51,6 +51,6 @@ resolveLayers = foldl1 resolveTwoLayers
 layerToString :: Layer -> String
 layerToString l =  concatMap printCoordinate (Array.range (Array.bounds l))
   where printCoordinate (y,x) = let value = l Array.! (y,x);
-                                    newline = if x==24 then "\r" else "" 
+                                    newline = if x==24 then "\n" else "" 
                                     stringValue = if value == 0 then "-" else "#" in
                                       stringValue ++ newline
