@@ -12,4 +12,4 @@ main = do
 
 
 addInput :: Int -> Memory -> Memory
-addInput i (Mem pos regs input out) = Mem pos regs (i:input) out
+addInput i (Mem pos regs input out relBase) = Mem pos regs (i:input) out relBase

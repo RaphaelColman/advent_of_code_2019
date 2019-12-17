@@ -15,6 +15,6 @@ spec = do
 
 
 readMemory :: Maybe Memory -> Seq Int
-readMemory (Just (Mem _ r _ _)) = r
+readMemory (Just (Mem _ r _ _ _)) = r
 readMemory Nothing = Seq.empty
 
