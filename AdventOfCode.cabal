@@ -31,7 +31,8 @@ library
         split -any,
         containers -any,
         array -any,
-        linear -any
+        linear -any,
+        lens -any
 
 test-suite spec
     type: exitcode-stdio-1.0
@@ -56,4 +57,5 @@ test-suite spec
         base ==4.*,
         hspec ==2.*,
         AdventOfCode -any,
-        containers -any
+        containers -any,
+        linear -any

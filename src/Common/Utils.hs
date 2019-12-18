@@ -23,9 +23,11 @@ seqLookupWithDefault defaultValue i s = if i < ln then fromJust (Seq.lookup i s)
 
 
 gcf :: Integer -> Integer -> Integer
-gcf a b = let larger = abs $ max a b;
-              smaller = abs $ min a b;
-              (_, remainder) = quotRem larger smaller in
+gcf a b
+      | a == 0 || b == 0 = 1
+      | otherwise = let larger = abs $ max a b;
+                        smaller = abs $ min a b;
+                        (_, remainder) = quotRem larger smaller in
       if remainder == 0
       then b
       else gcf smaller remainder
@@ -37,8 +39,9 @@ enumerate xs = map (\x -> (x, xs !! x)) [0..(ln-1)]
 enumerateMultilineString :: String -> [((Int, Int), Char)] 
 enumerateMultilineString str 
       | maximum lengths /= minimum lengths = error "Line lengths are not equal" 
-      | otherwise = zip (range ((0,0), (xLength -1, yLength -1))) (concat lines') 
+      | otherwise = zip coords (concat lines') 
       where lines' = lines str 
             xLength = length (head lines')
             yLength = length lines'
             lengths = map length lines'
+            coords = [(x,y) | y <- [0..yLength -1], x <- [0..xLength - 1]]
