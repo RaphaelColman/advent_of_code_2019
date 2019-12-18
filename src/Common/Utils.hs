@@ -4,6 +4,7 @@ import qualified Data.Sequence as Seq
 import Data.Sequence(Seq(..))
 import Data.Maybe
 import Data.Array
+import Debug.Trace
 
 seqLast :: Seq a -> Maybe a
 seqLast s = let i = Seq.length s - 1 in
@@ -33,7 +34,11 @@ enumerate :: [a] -> [(Int, a)]
 enumerate xs = map (\x -> (x, xs !! x)) [0..(ln-1)] 
     where ln = length xs
 
-enumerateMultilineString :: String -> Array (Int, Int) Char
-enumerateMultilineString str = listArray ((0,0), (lineLength-1, length lines' -1 )) $ concat lines' 
+enumerateMultilineString :: String -> [((Int, Int), Char)] 
+enumerateMultilineString str 
+      | maximum lengths /= minimum lengths = error "Line lengths are not equal" 
+      | otherwise = zip (range ((0,0), (xLength -1, yLength -1))) (concat lines') 
       where lines' = lines str 
-            lineLength = length (head lines')
+            xLength = length (head lines')
+            yLength = length lines'
+            lengths = map length lines'
