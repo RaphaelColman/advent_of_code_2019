@@ -71,9 +71,8 @@ multiply = threeParamOperation (*)
 threeParamOperation :: (Int -> Int -> Int) -> Memory -> Opcode -> Maybe Memory
 threeParamOperation f mem op = do
   [v1, v2] <- readNFromMemory 2 mem $ modes op
-  [_,_,outputLocation] <- readNFromMemoryImmediateMode 3 mem
-  let newPutLocation = if last (modes op) == Relative then outputLocation + relativeBase mem else outputLocation --This is janky. It relies on the 3rd parameter always being the 'write' one
-  let newMem = writeToMemory newPutLocation (f v1 v2) mem
+  let writePosition = readForWriting 3 mem $ last $ modes op
+  let newMem = writeToMemory writePosition (f v1 v2) mem
   pure $ movePointer (pos + 4) newMem
     where pos = position mem
 
@@ -95,9 +94,13 @@ readNFromMemory n (Mem pos regs _ _ relBase) modes' = do
 readNextFromMemory :: Memory -> Mode -> Maybe Int
 readNextFromMemory mem mode = head <$> readNFromMemory 1 mem [mode]
 
---Rename this to 'readForWriting' and incorporate relative mode
-readNFromMemoryImmediateMode :: Int -> Memory -> Maybe [Int]
-readNFromMemoryImmediateMode n mem = readNFromMemory n mem $ repeat Immediate
+readForWriting :: Int -> Memory -> Mode -> Int
+readForWriting shift (Mem pos regs _ _ relBase) mode = let value = seqLookupWithDefault 0 (pos+shift) regs in
+      case mode of
+        Position -> value
+        Relative -> value + relBase
+        Immediate -> value --Just assume it's position mode if we get this
+
 
 writeToMemory :: Int -> Int -> Memory -> Memory
 writeToMemory location value (Mem pos regs input out relativeBase') =
@@ -109,9 +112,8 @@ movePointer location (Mem _ regs input out relBase) = Mem location regs input ou
 
 
 readIn :: Memory -> Opcode -> Maybe Memory
-readIn (Mem pos regs input out relBase) op = let value = head input in do
-  let v = seqLookupWithDefault 0 (pos+1) regs
-  let writeTo = if head (modes op) == Relative then relBase + v else v
+readIn mem@(Mem pos regs input out relBase) op = let value = head input in do
+  let writeTo = readForWriting 1 mem $ head $ modes op
   pure $ Mem (pos+2) (seqUpdateAndExtend writeTo value regs) (tail input) out relBase
 
 writeToOutput :: Memory -> Opcode -> Maybe Memory
