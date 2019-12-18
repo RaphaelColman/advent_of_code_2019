@@ -3,6 +3,7 @@ module Common.Utils where
 import qualified Data.Sequence as Seq
 import Data.Sequence(Seq(..))
 import Data.Maybe
+import Data.Array
 
 seqLast :: Seq a -> Maybe a
 seqLast s = let i = Seq.length s - 1 in
@@ -18,3 +19,21 @@ seqUpdateAndExtend i a s = if i < ln then Seq.update i a s else Seq.update i a e
 seqLookupWithDefault :: a -> Int -> Seq a -> a
 seqLookupWithDefault defaultValue i s = if i < ln then fromJust (Seq.lookup i s) else defaultValue
       where ln = Seq.length s
+
+
+gcf :: Integer -> Integer -> Integer
+gcf a b = let larger = abs $ max a b;
+              smaller = abs $ min a b;
+              (_, remainder) = quotRem larger smaller in
+      if remainder == 0
+      then b
+      else gcf smaller remainder
+
+enumerate :: [a] -> [(Int, a)]
+enumerate xs = map (\x -> (x, xs !! x)) [0..(ln-1)] 
+    where ln = length xs
+
+enumerateMultilineString :: String -> Array (Int, Int) Char
+enumerateMultilineString str = listArray ((0,0), (lineLength-1, length lines' -1 )) $ concat lines' 
+      where lines' = lines str 
+            lineLength = length (head lines')
