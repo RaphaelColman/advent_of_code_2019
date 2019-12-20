@@ -10,13 +10,14 @@ cabal-version: >=1.10
 
 library
     exposed-modules:
+        Common.Intcode
+        Common.Utils
+        Common.Geometry
         AoC1.RocketEquation
         AoC2.ProgramAlarm
         AoC3.CrossedWires
         AoC4.SecureContainer
-        Common.Intcode
         AoC5.Asteroids
-        Common.Utils
         AoC6.OrbitMap
         AoC7.Amplification
         AoC8.SpaceImageFormat
