@@ -4,6 +4,7 @@ import qualified AoC11.SpacePolice as SP
 import AoC11.SpacePolice
 import Test.Hspec
 import Linear.V2
+import System.IO
 
 spec :: Spec
 spec = do
@@ -31,3 +32,14 @@ spec = do
         it "gets turn for int" $ do
             turnForInt 0 `shouldBe` TurnLeft
             turnForInt 1 `shouldBe` TurnRight
+    
+    describe "counting panels" $
+        it "should count to the correct number" $
+            countPanelsIO `shouldReturn` Just 2219
+
+countPanelsIO :: IO (Maybe Int)
+countPanelsIO = do
+    fileHandle <- openFile "src/AoC11/input.txt" ReadMode
+    contents <- hGetContents fileHandle
+    let sys = initSystemFromString contents
+    pure $ totalPanelsPainted <$> paintPanels sys Black

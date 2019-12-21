@@ -6,16 +6,14 @@ import Common.Intcode
 import Linear.V2
 import Linear.Vector
 import qualified Data.Set as Set
-import qualified Data.Sequence as Seq
-import Data.Sequence(Seq(..))
 import Control.Lens hiding (element)
 import Control.Lens.TH
 import System.IO
 import Common.Utils
 import qualified Data.Map as Map
-
-
-
+import Data.List.Split
+import Data.List
+import Data.Maybe
 
 type Point = V2 Int
 type PaintOp = (Point, Colour) 
@@ -39,17 +37,18 @@ main = do
     handle <- openFile "src/AoC11/input.txt" ReadMode
     contents <- hGetContents handle
     let sys = initSystemFromString contents
-    print $ totalPanelsPainted <$> paintPanels sys
+    print $ totalPanelsPainted <$> paintPanels sys Black
+    putStr $ fromJust (renderPanels <$> paintPanels sys White)
 
 
-paintPanels :: System -> Maybe System
-paintPanels sys
+paintPanels :: System -> Colour -> Maybe System
+paintPanels sys startColour
     | intcodeHalted (sys ^. rMemory) = Just sys
-    | otherwise = rStep sys >>= paintPanels
+    | otherwise = rStep sys startColour >>= (`paintPanels` startColour)
 
-rStep :: System -> Maybe System
-rStep sys@(System pos facing mem' paintHistory) = do
-    let c = currentColour sys
+rStep :: System -> Colour -> Maybe System
+rStep sys@(System pos facing mem' paintHistory) startColour = do
+    let c = currentColour sys startColour
     let input = if c == White then 1 else 0
     newMem <-runIntCodeWithInput [input] mem'
     let turnInt:colourInt:_ = outputs newMem --use the latest two outputs
@@ -59,8 +58,8 @@ rStep sys@(System pos facing mem' paintHistory) = do
     pure $ System newPos newFacing newMem (newPaintOp : paintHistory)
 
 --'apply' all the colours in the history to your panel
-currentColour :: System -> Colour
-currentColour sys = foldr (\po' _ -> snd po') Black $ filter ((==pos) . fst) po
+currentColour :: System -> Colour -> Colour
+currentColour sys startingColour = foldr (\po' _ -> snd po') startingColour $ filter ((==pos) . fst) po
     where po = sys ^. paintOps
           pos = sys ^. rPosition
 
@@ -90,3 +89,16 @@ initSystemFromString str = System (V2 0 0) North mem []
 
 totalPanelsPainted :: System -> Int
 totalPanelsPainted = length . Set.fromList . map fst . view paintOps
+
+renderPanels :: System -> String
+renderPanels sys = foo 
+    where panelMap = Map.fromListWith (flip const) (sys ^. paintOps)
+          keys = Map.keys panelMap
+          xMax = (maximumBy (\a b -> compare (a ^._x) (b ^._x)) keys) ^._x
+          xMin = (minimumBy (\a b -> compare (a ^._x) (b ^._x)) keys) ^._x
+          yMax = (maximumBy (\a b -> compare (a ^._y) (b ^._y)) keys) ^._y
+          yMin = (minimumBy (\a b -> compare (a ^._y) (b ^._y)) keys) ^._y
+          xRange = (xMax - xMin) + 1
+          panelList = [Map.findWithDefault Black (V2 x y) panelMap | y <- [yMin .. yMax], x <- [xMin..xMax]]
+          panelRows = reverse $ chunksOf xRange $ map (\x -> if x == White then '#' else '.') panelList
+          foo = unlines panelRows

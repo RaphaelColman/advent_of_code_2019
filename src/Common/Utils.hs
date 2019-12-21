@@ -4,7 +4,7 @@ import qualified Data.Sequence as Seq
 import Data.Sequence(Seq(..))
 import Data.Maybe
 import Data.Array
-import Debug.Trace
+import Linear.V2
 
 seqLast :: Seq a -> Maybe a
 seqLast s = let i = Seq.length s - 1 in
@@ -56,3 +56,6 @@ enumPrev :: (Enum a, Eq a, Bounded a) => a -> a
 enumPrev e
       | e == minBound = maxBound
       | otherwise = pred e
+
+v2ToTup :: V2 Int -> (Int, Int)
+v2ToTup (V2 x y) = (x, y)
