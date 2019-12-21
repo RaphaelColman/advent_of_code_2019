@@ -24,6 +24,7 @@ library
         AoC9.SensorBoost
         AoC10.MonitoringStations
         AoC11.SpacePolice
+        AoC12.NBody
     hs-source-dirs: src
     default-language: Haskell2010
     ghc-options: -Wall -fwarn-tabs
@@ -54,6 +55,7 @@ test-suite spec
         AoC9.SensorBoostSpec
         AoC10.MonitoringStationsSpec
         AoC11.SpacePoliceSpec
+        AoC12.NBodySpec
     default-language: Haskell2010
     ghc-options: -Wall
     build-depends:

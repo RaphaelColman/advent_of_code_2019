@@ -5,6 +5,7 @@ import Data.Sequence(Seq(..))
 import Data.Maybe
 import Data.Array
 import Linear.V2
+import Linear.V3
 
 seqLast :: Seq a -> Maybe a
 seqLast s = let i = Seq.length s - 1 in
@@ -59,3 +60,6 @@ enumPrev e
 
 v2ToTup :: V2 Int -> (Int, Int)
 v2ToTup (V2 x y) = (x, y)
+
+foldrV3 :: (a -> b -> b) -> b -> V3 a -> b
+foldrV3 f acc (V3 x y z) = foldr f acc [x,y,z]
