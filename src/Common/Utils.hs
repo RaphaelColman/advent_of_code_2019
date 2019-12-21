@@ -45,3 +45,14 @@ enumerateMultilineString str
             yLength = length lines'
             lengths = map length lines'
             coords = [(x,y) | y <- [0..yLength -1], x <- [0..xLength - 1]]
+
+enumNext :: (Enum a, Eq a, Bounded a) => a -> a
+enumNext e
+      | e == maxBound  = minBound
+      | otherwise = succ e
+
+
+enumPrev :: (Enum a, Eq a, Bounded a) => a -> a
+enumPrev e
+      | e == minBound = maxBound
+      | otherwise = pred e
