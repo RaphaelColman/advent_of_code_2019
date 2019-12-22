@@ -7,6 +7,12 @@ import Control.Lens
 import Control.Lens.TH
 import Data.List
 import Common.Utils
+import Data.Char(isDigit)
+import Text.Read(readMaybe)
+import System.IO
+import Debug.Trace
+import qualified Data.Set as Set
+import Data.Set(Set(..))
 
 type Position = V3 Int
 type Velocity = V3 Int
@@ -14,40 +20,38 @@ type Velocity = V3 Int
 data Moon = Moon {
     _position :: Position,
     _velocity :: Velocity
-    } deriving (Eq, Show)
+    } deriving (Eq, Show, Ord)
 
 type System = [Moon]
 
 makeLenses ''Moon
 
 main :: IO ()
-main = print $ totalEnergy 1000 system
+main = do
+    fileHandle <- openFile "src/AoC12/input.txt" ReadMode
+    contents <- hGetContents fileHandle
+    let system = parseSystem contents
+    print $ totalEnergy 1000 <$> system 
+    print $ calculateFirstRepeat <$> system
 
 totalEnergy :: Int -> System -> Int
 totalEnergy n = energy . last . take (n+1) . iterate step
 
 calcVelocity :: Moon -> Moon -> Velocity
 calcVelocity this other = diffV
-    where originalVelocity = this ^. velocity
-          diffV = convertOrd <$> ((other ^. position) - (this ^. position))
+    where diffV = convertOrd <$> ((other ^. position) - (this ^. position))
           convertOrd x
             | x > 0 = 1
             | x < 0 = -1
             | otherwise = 0
 
 calcVelocities :: Moon -> System -> Velocity
-calcVelocities m = (+) (m ^. velocity) . (sumV . map (calcVelocity m)) 
---This is crap. calcVelocity returns just the velocities calculated, whereas calcVelcoties incorporates the moon's original velocity
---This should just return the velocities calculated and leave it to the client to add to the original velocity
+calcVelocities m = sumV . map (calcVelocity m)
 
 step :: System -> System
-step sys = map (applyVelocity . (\m -> m & velocity .~ calcVelocities m sys)) sys
-    where applyVelocity m = m & position %~ (\x -> x + m ^. velocity)
-
-stepN :: System -> [System]
-stepN = unfoldr doStep
-    where doStep :: System -> Maybe (System, System)
-          doStep sys' = let newSys = step sys' in Just (newSys, newSys)
+step sys = newSys 
+    where newSys = map (applyVelocity . (\m -> m & velocity %~ (\v -> v + calcVelocities m sys))) sys
+          applyVelocity m = m & position %~ (\x -> x + m ^. velocity)
 
 energy :: System -> Int
 energy = sum . map moonEnergy
@@ -57,9 +61,25 @@ moonEnergy moon = pot * kin
     where pot = foldrV3 ((+) . abs) 0 $ moon ^. position
           kin = foldrV3 ((+) . abs) 0 $ moon ^. velocity
 
-inputMoon1 = Moon (V3( -4)(  3)(15)) (V3 0 0 0)
-inputMoon2 = Moon (V3(-11)(-10)(13)) (V3 0 0 0)
-inputMoon3 = Moon (V3(  2)(  2)(18)) (V3 0 0 0)
-inputMoon4 = Moon (V3(  7)( -1)( 0)) (V3 0 0 0)
 
-system = [inputMoon1, inputMoon2, inputMoon3, inputMoon4]
+parseSystem :: String -> Maybe System
+parseSystem = mapM parseMoon . lines
+
+parseMoon :: String -> Maybe Moon
+parseMoon str = do 
+    [x,y,z] <- traverse readMaybe $ words $ clearCharacters p str
+    pure $ Moon (V3 x y z) (V3 0 0 0)
+    where p c
+            | c == '-' = False 
+            | otherwise = not $ isDigit c
+
+nAxis :: ((b -> Const b b) -> V3 Int -> Const b (V3 Int)) -> [Moon] -> ([b], [b])
+nAxis f sys = (map xPos sys, map xVel sys)
+    where xPos = view f ._position
+          xVel = view f ._velocity
+
+nPhase :: Eq b => ((b -> Const b b) -> V3 Int -> Const b (V3 Int)) -> [Moon] -> Int
+nPhase f sys = ((+) 1 . length . takeWhile (\s -> nAxis f s /= nAxis f sys) . iterate step) (step sys) 
+
+calculateFirstRepeat :: System -> Int
+calculateFirstRepeat sys = lcm (nPhase _z sys) (lcm (nPhase _y sys) (nPhase _x sys))

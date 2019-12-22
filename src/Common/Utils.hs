@@ -6,6 +6,9 @@ import Data.Maybe
 import Data.Array
 import Linear.V2
 import Linear.V3
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.Set(Set(..))
 
 seqLast :: Seq a -> Maybe a
 seqLast s = let i = Seq.length s - 1 in
@@ -34,8 +37,7 @@ gcf a b
       else gcf smaller remainder
 
 enumerate :: [a] -> [(Int, a)]
-enumerate xs = map (\x -> (x, xs !! x)) [0..(ln-1)] 
-    where ln = length xs
+enumerate = zip [0,1..]
 
 enumerateMultilineString :: String -> [((Int, Int), Char)] 
 enumerateMultilineString str 
@@ -63,3 +65,14 @@ v2ToTup (V2 x y) = (x, y)
 
 foldrV3 :: (a -> b -> b) -> b -> V3 a -> b
 foldrV3 f acc (V3 x y z) = foldr f acc [x,y,z]
+
+clearCharacters :: (Char -> Bool) -> String -> String
+clearCharacters p = map (\c -> if p c then ' ' else c)
+
+firstRepeatedIndex :: Ord a => [a] -> Maybe Int
+firstRepeatedIndex xs = go (enumerate xs) Set.empty
+      where go :: Ord a => [(Int, a)] -> Set a -> Maybe Int
+            go [] _ = Nothing
+            go (x:xs') found = if snd x `Set.member` found
+                              then Just (fst x)
+                              else go xs' (Set.insert (snd x) found)
