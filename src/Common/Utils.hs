@@ -7,6 +7,7 @@ import Data.Array
 import Linear.V2
 import Linear.V3
 import qualified Data.Map as Map
+import Data.Map(Map(..))
 import qualified Data.Set as Set
 import Data.Set(Set(..))
 

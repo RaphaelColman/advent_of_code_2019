@@ -155,6 +155,9 @@ runIntCodeWithInput input' (Mem pos regs existingInput out' relBase) = let newMe
 appendInput :: Memory -> Int -> Memory
 appendInput (Mem pos regs in' out' relBase) xs = Mem pos regs (xs : in') out' relBase
 
+clearOutput :: Memory -> Memory
+clearOutput (Mem pos regs i _ relBase) = Mem pos regs i [] relBase
+
 parseInstruction :: Int -> Maybe Instruction
 parseInstruction = \case
             1 -> Just Add
