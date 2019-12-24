@@ -127,18 +127,6 @@ renderGameState = renderVectorMap . Map.map typeToChar
             Paddle -> '_'
             Ball -> 'o'
 
-renderVectorMap :: Map (V2 Int) Char -> String
-renderVectorMap m = foo
-    where keys = Map.keys m
-          xMax = maximumBy (\a b -> compare (a ^._x) (b ^._x)) keys ^._x
-          xMin = minimumBy (\a b -> compare (a ^._x) (b ^._x)) keys ^._x
-          yMax = maximumBy (\a b -> compare (a ^._y) (b ^._y)) keys ^._y
-          yMin = minimumBy (\a b -> compare (a ^._y) (b ^._y)) keys ^._y
-          xRange = (xMax - xMin) + 1
-          panelList = [Map.findWithDefault '.' (V2 x y) m | y <- [yMin .. yMax], x <- [xMin..xMax]]
-          panelRows = chunksOf xRange panelList
-          foo = unlines panelRows
-
 doGameInteractive :: Game -> IO Game
 doGameInteractive game = do
     let newGame = fromJust $ gameStep game

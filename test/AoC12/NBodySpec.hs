@@ -8,7 +8,7 @@ import Data.Maybe
 spec :: Spec
 spec = do
     describe "Iterate and calculate energy" $ 
-        xit "can iterate n times and get the energy" $ do
+        it "can iterate n times and get the energy" $ do
             totalEnergyIO 10 (testInput 1) `shouldReturn` 179 
             totalEnergyIO 100 (testInput 2) `shouldReturn` 1940
     
