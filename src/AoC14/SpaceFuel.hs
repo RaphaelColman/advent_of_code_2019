@@ -9,9 +9,9 @@ import Control.Lens.TH
 import qualified Data.Map as Map
 import Data.Map(Map(..))
 import System.IO
-import Debug.Trace
 import Data.Maybe
 import Data.Tuple
+import System.IO
 
 type Chemical = String
 type Ingredient = (Int, Chemical)
@@ -32,9 +32,9 @@ makeLenses ''Refinery
 
 main :: IO ()
 main = do
-    fileHandle <- openFile "test/AoC14/input1.txt" ReadMode
+    fileHandle <- openFile "src/AoC14/input.txt" ReadMode
     contents <- hGetContents fileHandle
-    print "hello world"
+    print $ calculateOre $ makeReactionMap $ parseReactionList contents
 
 parseReaction :: String -> Reaction
 parseReaction str = Reaction output' inputs' 
@@ -59,30 +59,25 @@ calculateOreImpl :: Map Chemical Instruction -> Refinery -> Int
 calculateOreImpl spec ref@(Refinery reserves required)
     | null required = 0
     | onlyOre required = Map.foldr (+) 0 required
-    | otherwise = calculateOreImpl spec (Refinery newReserves' newRequired')
-        where newReserves' = undefined
-              newRequired' = undefined
-              newOre' = undefined
-              adjustedForReserves = takeFromReserves ref
-              --synthesis should put the produced amount in the reserves
-              synthesise (amount, chem) = let Just (producedAmount, ingredients) = Map.lookup chem spec;
-                                                factor = ceiling $ (fromIntegral amount :: Double) / (fromIntegral producedAmount :: Double)
-                                                in Reaction (producedAmount, chem) (map (multiplyIngredient factor) ingredients)
+    | otherwise = calculateOreImpl spec (synthesise adjustedForReserves spec)
+        where adjustedForReserves = takeFromReserves ref
 
 multiplyIngredient :: Int -> Ingredient -> Ingredient
 multiplyIngredient a (x, chem) = (a*x, chem)
 
 onlyOre :: Map Chemical Int -> Bool
-onlyOre = (==1) . length . filter (/="ORE") . Map.keys
+onlyOre = null . filter (/="ORE") . Map.keys
 
 takeFromReserves :: Refinery -> Refinery
 takeFromReserves (Refinery reserves' required') = Refinery newReserves newRequired
-    where newReserves = Map.mapWithKey (\k a -> a - Map.findWithDefault 0 k required') reserves'
-          newRequired = Map.mapWithKey (\k a -> a - Map.findWithDefault 0 k reserves') required'
+    where newReserves = removeNotNeeded $ Map.unionWith (-) reserves' amountToSubtract
+          newRequired = removeNotNeeded $ Map.unionWith (-) required' amountToSubtract
+          amountToSubtract = Map.intersectionWith min reserves' required'
+          removeNotNeeded = Map.filter (/=0)
 
 synthesise :: Refinery -> Map Chemical Instruction -> Refinery
 synthesise (Refinery reserves' required') spec = Refinery newReserves newRequired
-    where reactions = Map.mapWithKey getReaction required'
+    where reactions = Map.mapWithKey getReaction $ Map.filterWithKey (\k _ -> k /="ORE") required'
           newReserves = addIngredientsToMap (map _output $ Map.elems reactions) reserves'
           newRequired = addIngredientsToMap (concatMap _inputs (Map.elems reactions)) required'
           getReaction chem amount = let Just (producedAmount, ingredients) = Map.lookup chem spec; --This will return Nothing if you look up ORE
@@ -90,5 +85,5 @@ synthesise (Refinery reserves' required') spec = Refinery newReserves newRequire
                                                 in Reaction (factor * producedAmount, chem) (map (multiplyIngredient factor) ingredients)
 
 addIngredientsToMap :: [Ingredient] -> Map Chemical Int -> Map Chemical Int
-addIngredientsToMap ings mp = let ingredientMap = Map.fromList (map swap ings) in
-                               Map.mapWithKey (\k a -> a + Map.findWithDefault 0 k ingredientMap) mp
+addIngredientsToMap ings mp = let ingredientMap = Map.fromListWith (+) (map swap ings) in
+                               Map.unionWith (+) ingredientMap mp
