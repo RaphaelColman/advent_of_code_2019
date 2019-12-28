@@ -7,11 +7,7 @@ import           Data.Char
 import           Data.List.Split
 import           Data.Map        (Map (..))
 import qualified Data.Map        as Map
-import           Data.Maybe
-import           Data.Tree
 import           Data.Tuple
-import           Debug.Trace
-import           System.IO
 import           System.IO
 
 type Chemical = String
@@ -27,6 +23,8 @@ data Refinery = Refinery {
     _reserves :: Map Chemical Integer,
     _required :: Map Chemical Integer
 } deriving (Eq, Show)
+
+type Specification = Map Chemical Instruction
 
 makeLenses ''Reaction
 makeLenses ''Refinery
@@ -49,18 +47,18 @@ parseReaction str = Reaction output' inputs'
 parseReactionList :: String -> ReactionList
 parseReactionList = map parseReaction . lines
 
-makeReactionMap :: ReactionList -> Map Chemical Instruction
+makeReactionMap :: ReactionList -> Specification
 makeReactionMap = Map.fromList . map toTup
     where toTup (Reaction o i) = (snd o, (fst o, i))
 
 
-calculateOre :: Integer -> Map Chemical Instruction -> Integer
+calculateOre :: Integer -> Specification -> Integer
 calculateOre amount spec = calculateOreImpl spec (Refinery Map.empty (Map.fromList [("FUEL", amount)]))
 
-calculateOreImpl :: Map Chemical Instruction -> Refinery -> Integer
-calculateOreImpl spec ref@(Refinery reserves required)
-    | null required = 0
-    | onlyOre required = Map.foldr (+) 0 required
+calculateOreImpl :: Specification -> Refinery -> Integer
+calculateOreImpl spec ref@(Refinery _ required')
+    | null required' = 0
+    | onlyOre required' = Map.foldr (+) 0 required'
     | otherwise = calculateOreImpl spec (synthesise adjustedForReserves spec)
         where adjustedForReserves = takeFromReserves ref
 
@@ -77,20 +75,23 @@ takeFromReserves (Refinery reserves' required') = Refinery newReserves newRequir
           amountToSubtract = Map.intersectionWith min reserves' required'
           removeNotNeeded = Map.filter (/=0)
 
-synthesise :: Refinery -> Map Chemical Instruction -> Refinery
+synthesise :: Refinery -> Specification -> Refinery
 synthesise (Refinery reserves' required') spec = Refinery newReserves newRequired
-    where reactions = Map.mapWithKey getReaction $ Map.filterWithKey (\k _ -> k /="ORE") required'
+    where reactions = Map.mapMaybeWithKey (\k a -> getReaction k a spec) required'
           newReserves = addIngredientsToMap (map _output $ Map.elems reactions) reserves'
           newRequired = addIngredientsToMap (concatMap _inputs (Map.elems reactions)) required'
-          getReaction chem amount = let Just (producedAmount, ingredients) = Map.lookup chem spec; --This will return Nothing if you look up ORE
-                                                factor = ceiling $ (fromInteger amount :: Double) / (fromInteger producedAmount :: Double)
-                                                in Reaction (factor * producedAmount, chem) (map (multiplyIngredient factor) ingredients)
+
+getReaction :: Chemical -> Integer -> Specification -> Maybe Reaction
+getReaction chem amount spec = do
+    (producedAmount, ingredients) <- Map.lookup chem spec --This will return Nothing if you look up ORE
+    let factor = ceiling $ (fromInteger amount :: Double) / (fromInteger producedAmount :: Double)
+    Just $ Reaction (factor * producedAmount, chem) (map (multiplyIngredient factor) ingredients)
 
 addIngredientsToMap :: [Ingredient] -> Map Chemical Integer -> Map Chemical Integer
 addIngredientsToMap ings mp = let ingredientMap = Map.fromListWith (+) (map swap ings) in
                                Map.unionWith (+) ingredientMap mp
 
-fuelFromOre :: Integer -> Map Chemical Instruction -> Maybe Integer
+fuelFromOre :: Integer -> Specification -> Maybe Integer
 fuelFromOre i spec = binarySearch i (`calculateOre` spec) 0 (lowerBound*2)
     where oreForSingleFuel = calculateOre 1 spec
           lowerBound = oreForSingleFuel * i
