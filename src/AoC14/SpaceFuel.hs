@@ -92,9 +92,9 @@ addIngredientsToMap ings mp = let ingredientMap = Map.fromListWith (+) (map swap
                                Map.unionWith (+) ingredientMap mp
 
 fuelFromOre :: Integer -> Specification -> Maybe Integer
-fuelFromOre i spec = binarySearch i (`calculateOre` spec) 0 (lowerBound*2)
+fuelFromOre i spec = binarySearch i (`calculateOre` spec) 0 upperBound 
     where oreForSingleFuel = calculateOre 1 spec
-          lowerBound = oreForSingleFuel * i
+          upperBound = oreForSingleFuel * i * 2
 
 binarySearch :: Integer -> (Integer -> Integer) -> Integer -> Integer -> Maybe Integer
 binarySearch value f lower upper
