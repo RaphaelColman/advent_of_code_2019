@@ -14,42 +14,33 @@ spec = do
     
     describe "Calculating ORE" $
         it "should calculate ore for fuel" $ do
-            --calculateOreIO 1 `shouldReturn` 31
-            --calculateOreIO 2 `shouldReturn` 165
+            calculateOreIO 1 `shouldReturn` 31
+            calculateOreIO 2 `shouldReturn` 165
             calculateOreIO 3 `shouldReturn` 13312
+            calculateOreIO 4 `shouldReturn` 180697
+            calculateOreIO 5 `shouldReturn` 2210736
     
-    describe "Synthesising materials" $ do
-        it "should put materials in reserves" $
-            refineIO 1 `shouldReturn` expectedRef1
-        
-        it "should take from reserves" $
-            takeFromReserves refineryWithReserves `shouldBe` refineryAfterTakingFromReserves
- 
-calculateOreIO :: Int -> IO Int
+    describe "Part 2" $
+        it "should calculate fuel from ore" $ do
+            fuelFromOreIO 3 `shouldReturn` Just 82892753
+            fuelFromOreIO 4 `shouldReturn` Just 5586022
+            fuelFromOreIO 5 `shouldReturn` Just 460664
+    
+calculateOreIO :: Int -> IO Integer
 calculateOreIO i = do
     fileHandle <- openFile ("test/AoC14/input" ++ show i ++ ".txt") ReadMode
     contents <- hGetContents fileHandle
-    pure $ calculateOre $ makeReactionMap $ parseReactionList contents
+    pure $ calculateOre 1 $ makeReactionMap $ parseReactionList contents
 
-ref1 = Refinery Map.empty $ Map.fromList [("A", 7), ("E", 1)]
-expectedRef1 = Refinery (Map.fromList [("A", 10), ("E", 1)]) $ Map.fromList [("A",14),("D",1),("E",1),("ORE",10)]
 
-refineIO :: Int -> IO Refinery
-refineIO i = do
+fuelFromOreIO :: Int -> IO (Maybe Integer)
+fuelFromOreIO i = do
     fileHandle <- openFile ("test/AoC14/input" ++ show i ++ ".txt") ReadMode
     contents <- hGetContents fileHandle
-    let spec = makeReactionMap $ parseReactionList contents
-    return $ synthesise ref1 spec
-    
-refineryWithReserves = Refinery (Map.fromList [("A", 10), ("B", 9)]) (Map.fromList [("A", 5)])
-refineryAfterTakingFromReserves = Refinery (Map.fromList [("A", 5), ("B", 9)]) Map.empty
+    pure $ fuelFromOre 1000000000000 $ makeReactionMap $ parseReactionList contents
 
-
-needsARefinery = Refinery {_reserves = Map.fromList [], _required = Map.fromList [("AB",2),("BC",3),("CA",4)]}
-
-needsAIO :: IO Refinery
-needsAIO = do
-    fileHandle <- openFile ("test/AoC14/input2.txt") ReadMode
+minusNumberIO :: IO Integer
+minusNumberIO = do
+    fileHandle <- openFile "test/AoC14/input3.txt" ReadMode
     contents <- hGetContents fileHandle
-    let spec = makeReactionMap $ parseReactionList contents
-    return $ synthesise needsARefinery spec
+    pure $ calculateOre 16640000000000000 $ makeReactionMap $ parseReactionList contents
