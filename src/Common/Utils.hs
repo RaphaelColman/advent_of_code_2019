@@ -1,18 +1,18 @@
 module Common.Utils where
 
-import qualified Data.Sequence as Seq
-import Data.Sequence(Seq(..))
-import Data.Maybe
-import Data.Array
-import Linear.V2
-import Linear.V3
-import qualified Data.Map as Map
-import Data.Map(Map(..))
-import qualified Data.Set as Set
-import Data.Set(Set(..))
-import Data.List.Split
-import Control.Lens
-import Data.List
+import           Control.Lens
+import           Data.Array
+import           Data.List
+import           Data.List.Split
+import           Data.Map        (Map (..))
+import qualified Data.Map        as Map
+import           Data.Maybe
+import           Data.Sequence   (Seq (..))
+import qualified Data.Sequence   as Seq
+import           Data.Set        (Set (..))
+import qualified Data.Set        as Set
+import           Linear.V2
+import           Linear.V3
 
 seqLast :: Seq a -> Maybe a
 seqLast s = let i = Seq.length s - 1 in
@@ -43,11 +43,11 @@ gcf a b
 enumerate :: [a] -> [(Int, a)]
 enumerate = zip [0,1..]
 
-enumerateMultilineString :: String -> [((Int, Int), Char)] 
-enumerateMultilineString str 
-      | maximum lengths /= minimum lengths = error "Line lengths are not equal" 
-      | otherwise = zip coords (concat lines') 
-      where lines' = lines str 
+enumerateMultilineString :: String -> [((Int, Int), Char)]
+enumerateMultilineString str
+      | maximum lengths /= minimum lengths = error "Line lengths are not equal"
+      | otherwise = zip coords (concat lines')
+      where lines' = lines str
             xLength = length (head lines')
             yLength = length lines'
             lengths = map length lines'
@@ -91,4 +91,9 @@ renderVectorMap m = foo
           xRange = (xMax - xMin) + 1
           panelList = [Map.findWithDefault '.' (V2 x y) m | y <- [yMin .. yMax], x <- [xMin..xMax]]
           panelRows = chunksOf xRange panelList
-          foo = unlines panelRows
+          foo = unlines (replicate xRange '=' : panelRows)
+
+safeHead :: [a] -> Maybe a
+safeHead xs
+      | null xs = Nothing
+      | otherwise  = Just $ head xs

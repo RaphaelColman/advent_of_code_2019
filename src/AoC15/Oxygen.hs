@@ -12,11 +12,13 @@ import Control.Lens
 import Control.Lens.TH
 import Linear.Vector
 import Data.Maybe
-import System.IO
 import Debug.Trace
 import qualified Data.Sequence as Seq
 import Data.Sequence(Seq(..))
 import Data.List
+import Data.Graph
+import qualified Data.Set as Set
+import Data.Set(Set(..))
 
 data Cardinal = North | South | West | East deriving (Show, Eq, Enum, Bounded, Ord)
 data Tile = Fine | Wall | OxySystem deriving (Show, Eq, Enum, Bounded)
@@ -25,10 +27,11 @@ data RepairDroid = RepairDroid {
     _environment :: Environment,
     _location :: Point,
     _randomGen :: StdGen,
-    _travelHistory :: [Cardinal]
+    _travelHistory :: [Cardinal],
+    _locationHistory :: Set Point
 } deriving (Show)
 
-type Environment = Map (V2 Int) Tile
+type Environment = Map Point Tile
 type Point = V2 Int
 
 makeLenses ''RepairDroid
@@ -40,25 +43,44 @@ main = do
     contents <- hGetContents fileHandle
     gen <- getStdGen 
     let droid = initDroid (parse contents) gen
-    --exploreInteractive droid
-    let done = fromJust $ explore droid
-    putStr $ renderDroid done
-    print $ length $ simplifyCardinals $ done ^. travelHistory
+    exploreFullyIO droid
+    --let done = fromJust $ exploreFully droid
+    --putStr $ renderDroid done
+    --print $ length $ simplifyCardinals $ reverse $ done ^. travelHistory
 
 initDroid :: Memory -> StdGen -> RepairDroid
-initDroid mem gen = RepairDroid mem Map.empty (V2 0 0) gen []
+initDroid mem gen = RepairDroid mem (Map.fromList [(V2 0 0, Fine)]) (V2 0 0) gen [] Set.empty 
 
 explore :: RepairDroid -> Maybe RepairDroid
 explore rd
     | foundOxygenSystem (rd ^. memory) = Just rd
     | otherwise = moveRandom rd >>= explore
 
-exploreInteractive :: RepairDroid -> IO RepairDroid
-exploreInteractive rd = do
-    let newDroid = fromJust $ moveRandom rd
-    putStr $ renderDroid newDroid
-    _ <- getLine 
-    exploreInteractive newDroid
+exploreFully :: RepairDroid -> Maybe RepairDroid
+exploreFully rd
+    | exploredAll rd = Just rd
+    | otherwise = moveRandom rd >>= exploreFully
+
+exploreFullyIO :: RepairDroid -> IO ()
+exploreFullyIO rd
+    | exploredAll rd = putStr $ renderDroid rd 
+    | otherwise = do
+        let nextMove = fromJust $ moveRandom rd 
+        putStr $ renderDroid nextMove
+        --getLine
+        exploreFullyIO nextMove
+
+isEdgeTile :: Point -> Environment -> Bool
+isEdgeTile p env = not $ null unknown
+    where possible = map (`moveDroid` p) $ enumFrom North
+          unknown = filter (`Map.notMember` env) possible
+
+exploredAll :: RepairDroid -> Bool
+--exploredAll rd = trace ("nonWallEdgeTiles: " ++ show nonWallEdgeTiles ++ " environment: " ++ show env ++ " pos: " ++ show (rd ^. location)) $ not (null env) && all (\t -> Map.findWithDefault Fine t env == Wall) edgeTiles
+exploredAll rd = not (null env) && all (\t -> Map.findWithDefault Fine t env == Wall) edgeTiles
+    where edgeTiles = filter (`isEdgeTile` env) $ Map.keys env 
+          env = rd ^. environment
+          nonWallEdgeTiles = filter (\t -> Map.findWithDefault Fine t env /= Wall) edgeTiles
 
 foundOxygenSystem :: Memory -> Bool
 foundOxygenSystem mem
@@ -73,7 +95,7 @@ tileForOutput o = case head (outputs o) of
     x -> error $ "Unexpected output from droid: " ++ show x --Use maybe instead?
 
 moveRandom :: RepairDroid -> Maybe RepairDroid
-moveRandom rd@(RepairDroid mem env loc gen history) = do
+moveRandom rd@(RepairDroid mem env loc gen history locHistory) = do
     --newMemory <- trace ("directionInt " ++ show randomDirectionInt) $ runIntCodeWithInput [randomDirectionInt] (clearOutput mem)
     let (newDirection, newGen) = decideDirection rd
     newMemory <- runIntCodeWithInput [intForCardinal newDirection] (clearOutput mem)
@@ -81,16 +103,19 @@ moveRandom rd@(RepairDroid mem env loc gen history) = do
     let tile = tileForOutput newMemory
     let newEnv = Map.insert targetLocation tile env
     let newLocation = if tile /= Wall then targetLocation else loc
-    let newTravelHistory = if tile /= Wall then history ++ [newDirection] else history
+    let newTravelHistory = if tile /= Wall then newDirection:history else history
+    let newLocHistory = if tile /= Wall then Set.insert loc locHistory else locHistory
     --pure $ trace ("rd: " ++ show rd) $ RepairDroid newMemory newEnv newLocation newGen
-    pure $ RepairDroid newMemory newEnv newLocation newGen newTravelHistory
+    pure $ RepairDroid newMemory newEnv newLocation newGen newTravelHistory newLocHistory
 
 decideDirection :: RepairDroid -> (Cardinal, StdGen)
-decideDirection (RepairDroid _ env loc gen _) = (possible !! randomInt , newGen)
+decideDirection (RepairDroid _ env loc gen _ locHistory) = (searchSpace !! randomInt , newGen)
     where possible = filter notAWall $ enumFrom North
-          (randomInt, newGen) = randomR (0 :: Int, (length possible - 1) :: Int) gen
-          notAWall card = let newLoc = moveDroid card loc in
-            Map.findWithDefault Fine newLoc env /= Wall
+          (randomInt, newGen) = randomR (0 :: Int, (length searchSpace - 1) :: Int) gen
+          notAWall card = let newLoc = moveDroid card loc in Map.findWithDefault Fine newLoc env /= Wall
+          visited card = Set.member (moveDroid card loc) locHistory
+          newSpaces = filter (not . visited) possible
+          searchSpace = if null newSpaces then possible else newSpaces
 
 
 moveDroid :: Cardinal -> Point -> Point
@@ -117,11 +142,13 @@ unitVectorForCardinal c = case c of
 
 renderDroid :: RepairDroid -> String
 renderDroid rd = renderVectorMap plusLocation 
-    where tileToChar t = case t of
-            Fine -> '.'
-            Wall -> '#'
-            OxySystem -> '@'
-          envMap = Map.map tileToChar (rd ^. environment)
+    where tileToChar k t
+            | k == V2 0 0 = '0'
+            | otherwise = case t of
+                Fine -> '.'
+                Wall -> '#'
+                OxySystem -> '@'
+          envMap = Map.mapWithKey tileToChar (rd ^. environment)
           plusLocation = Map.insert (rd ^. location) '^' envMap 
 
 simplifyCardinals :: [Cardinal] -> [Cardinal]
