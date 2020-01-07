@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 module AoC15.Oxygen where
 
 import System.IO
@@ -37,16 +38,32 @@ type Point = V2 Int
 makeLenses ''RepairDroid
 
 
+--main :: IO ()
+--main = do
+--    fileHandle <- openFile "src/AoC15/input.txt" ReadMode
+--    contents <- hGetContents fileHandle
+--    gen <- getStdGen 
+--    let droid = initDroid (parse contents) gen
+--    --exploreFullyIO droid
+--    --let done = fromJust $ exploreFully droid
+--    --putStr $ renderDroid done
+--    --print $ length $ simplifyCardinals $ reverse $ done ^. travelHistory
+
 main :: IO ()
 main = do
-    fileHandle <- openFile "src/AoC15/input.txt" ReadMode
+    fileHandle <- openFile "src/AoC15/map.txt" ReadMode
     contents <- hGetContents fileHandle
-    gen <- getStdGen 
-    let droid = initDroid (parse contents) gen
-    exploreFullyIO droid
-    --let done = fromJust $ exploreFully droid
-    --putStr $ renderDroid done
-    --print $ length $ simplifyCardinals $ reverse $ done ^. travelHistory
+    let env = parseMap contents
+    putStr $ renderEnvironment env
+    stepOxygenIO env
+
+stepOxygenIO :: Environment -> IO ()
+stepOxygenIO env = do
+    putStr $ renderEnvironment env
+    let newEnv = stepOxygen env
+    putStr $ renderEnvironment newEnv
+    getLine
+    stepOxygenIO newEnv
 
 initDroid :: Memory -> StdGen -> RepairDroid
 initDroid mem gen = RepairDroid mem (Map.fromList [(V2 0 0, Fine)]) (V2 0 0) gen [] Set.empty 
@@ -117,6 +134,17 @@ decideDirection (RepairDroid _ env loc gen _ locHistory) = (searchSpace !! rando
           newSpaces = filter (not . visited) possible
           searchSpace = if null newSpaces then possible else newSpaces
 
+stepOxygen :: Environment -> Environment
+stepOxygen env = Map.union adjacentPointsMap env 
+    where oxyLocations = Map.keys $ Map.filter (==OxySystem) env
+          allAdjacentPoints = filter (\p -> Map.findWithDefault Wall p env == Fine) $ concatMap adjacentPoints oxyLocations
+          adjacentPointsMap = Map.fromList $ map (, OxySystem) allAdjacentPoints
+
+oxygenDone :: Environment -> Bool
+oxygenDone env = False
+
+adjacentPoints :: Point -> [Point]
+adjacentPoints p = map (`moveDroid` p) $ enumFrom North
 
 moveDroid :: Cardinal -> Point -> Point
 moveDroid card loc = case card of
@@ -151,6 +179,16 @@ renderDroid rd = renderVectorMap plusLocation
           envMap = Map.mapWithKey tileToChar (rd ^. environment)
           plusLocation = Map.insert (rd ^. location) '^' envMap 
 
+renderEnvironment :: Environment -> String
+renderEnvironment env = renderVectorMap envMap 
+    where tileToChar k t
+            | k == V2 0 0 = '0'
+            | otherwise = case t of
+                Fine -> '.'
+                Wall -> '#'
+                OxySystem -> '@'
+          envMap = Map.mapWithKey tileToChar env
+
 simplifyCardinals :: [Cardinal] -> [Cardinal]
 simplifyCardinals ps = case firstPair of
                             Just (start, end) -> simplifyCardinals $ dropBetween start end ps
@@ -171,3 +209,17 @@ firstPairIndex = go 0
 
 dropBetween :: Int -> Int -> [a] -> [a]
 dropBetween start end xs = take start xs ++ drop end xs
+
+
+parseMap :: String -> Environment 
+parseMap str = vToTile
+    where coords = enumerateMultilineString str
+          vToChar = Map.mapKeys (uncurry V2) $ Map.fromList coords
+          vToTile = Map.map charToTile vToChar
+          charToTile c = case c of
+              '.' -> Fine
+              '#' -> Wall
+              '@' -> OxySystem
+              '^' -> Fine
+              '0' -> Fine
+              unknown -> error ("Unknown tile: " ++ [unknown])
