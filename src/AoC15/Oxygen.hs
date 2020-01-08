@@ -55,15 +55,22 @@ main = do
     contents <- hGetContents fileHandle
     let env = parseMap contents
     putStr $ renderEnvironment env
-    stepOxygenIO env
+    print $ doOxygenExpansion env
 
 stepOxygenIO :: Environment -> IO ()
 stepOxygenIO env = do
     putStr $ renderEnvironment env
     let newEnv = stepOxygen env
     putStr $ renderEnvironment newEnv
+    print $ oxygenDone newEnv
     getLine
     stepOxygenIO newEnv
+
+doOxygenExpansion :: Environment -> Int
+doOxygenExpansion = go 1
+    where go i env'
+                | oxygenDone env' = i
+                | otherwise = traceShow i $ go (i+1) (stepOxygen env')
 
 initDroid :: Memory -> StdGen -> RepairDroid
 initDroid mem gen = RepairDroid mem (Map.fromList [(V2 0 0, Fine)]) (V2 0 0) gen [] Set.empty 
@@ -97,7 +104,6 @@ exploredAll :: RepairDroid -> Bool
 exploredAll rd = not (null env) && all (\t -> Map.findWithDefault Fine t env == Wall) edgeTiles
     where edgeTiles = filter (`isEdgeTile` env) $ Map.keys env 
           env = rd ^. environment
-          nonWallEdgeTiles = filter (\t -> Map.findWithDefault Fine t env /= Wall) edgeTiles
 
 foundOxygenSystem :: Memory -> Bool
 foundOxygenSystem mem
@@ -136,12 +142,14 @@ decideDirection (RepairDroid _ env loc gen _ locHistory) = (searchSpace !! rando
 
 stepOxygen :: Environment -> Environment
 stepOxygen env = Map.union adjacentPointsMap env 
+    where adjacentPointsMap = Map.fromList $ map (, OxySystem) $ allAdjacentPoints env
+
+allAdjacentPoints :: Environment -> [Point]
+allAdjacentPoints env = filter (\p -> Map.findWithDefault Wall p env == Fine) $ concatMap adjacentPoints oxyLocations
     where oxyLocations = Map.keys $ Map.filter (==OxySystem) env
-          allAdjacentPoints = filter (\p -> Map.findWithDefault Wall p env == Fine) $ concatMap adjacentPoints oxyLocations
-          adjacentPointsMap = Map.fromList $ map (, OxySystem) allAdjacentPoints
 
 oxygenDone :: Environment -> Bool
-oxygenDone env = False
+oxygenDone = null . allAdjacentPoints
 
 adjacentPoints :: Point -> [Point]
 adjacentPoints p = map (`moveDroid` p) $ enumFrom North
