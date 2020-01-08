@@ -97,3 +97,14 @@ safeHead :: [a] -> Maybe a
 safeHead xs
       | null xs = Nothing
       | otherwise  = Just $ head xs
+
+firstPairIndex :: Eq a => [a] -> Maybe (Int, Int)
+firstPairIndex = go 0
+    where go :: Eq a => Int -> [a] -> Maybe (Int, Int)
+          go i xs'
+            | null newList = Nothing
+            | length found < 2 = go (i+1) xs'
+            | otherwise = Just (head found, found !! 1)
+                where newList = drop i xs'
+                      found = elemIndices (head newList) xs'
+

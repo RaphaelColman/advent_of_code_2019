@@ -13,7 +13,6 @@ import Control.Lens
 import Control.Lens.TH
 import Linear.Vector
 import Data.Maybe
-import Debug.Trace
 import qualified Data.Sequence as Seq
 import Data.Sequence(Seq(..))
 import Data.List
@@ -44,7 +43,6 @@ makeLenses ''RepairDroid
 --    contents <- hGetContents fileHandle
 --    gen <- getStdGen 
 --    let droid = initDroid (parse contents) gen
---    --exploreFullyIO droid
 --    --let done = fromJust $ exploreFully droid
 --    --putStr $ renderDroid done
 --    --print $ length $ simplifyCardinals $ reverse $ done ^. travelHistory
@@ -57,20 +55,11 @@ main = do
     putStr $ renderEnvironment env
     print $ doOxygenExpansion env
 
-stepOxygenIO :: Environment -> IO ()
-stepOxygenIO env = do
-    putStr $ renderEnvironment env
-    let newEnv = stepOxygen env
-    putStr $ renderEnvironment newEnv
-    print $ oxygenDone newEnv
-    getLine
-    stepOxygenIO newEnv
-
 doOxygenExpansion :: Environment -> Int
 doOxygenExpansion = go 1
     where go i env'
                 | oxygenDone env' = i
-                | otherwise = traceShow i $ go (i+1) (stepOxygen env')
+                | otherwise = go (i+1) (stepOxygen env')
 
 initDroid :: Memory -> StdGen -> RepairDroid
 initDroid mem gen = RepairDroid mem (Map.fromList [(V2 0 0, Fine)]) (V2 0 0) gen [] Set.empty 
@@ -85,22 +74,12 @@ exploreFully rd
     | exploredAll rd = Just rd
     | otherwise = moveRandom rd >>= exploreFully
 
-exploreFullyIO :: RepairDroid -> IO ()
-exploreFullyIO rd
-    | exploredAll rd = putStr $ renderDroid rd 
-    | otherwise = do
-        let nextMove = fromJust $ moveRandom rd 
-        putStr $ renderDroid nextMove
-        --getLine
-        exploreFullyIO nextMove
-
 isEdgeTile :: Point -> Environment -> Bool
 isEdgeTile p env = not $ null unknown
     where possible = map (`moveDroid` p) $ enumFrom North
           unknown = filter (`Map.notMember` env) possible
 
 exploredAll :: RepairDroid -> Bool
---exploredAll rd = trace ("nonWallEdgeTiles: " ++ show nonWallEdgeTiles ++ " environment: " ++ show env ++ " pos: " ++ show (rd ^. location)) $ not (null env) && all (\t -> Map.findWithDefault Fine t env == Wall) edgeTiles
 exploredAll rd = not (null env) && all (\t -> Map.findWithDefault Fine t env == Wall) edgeTiles
     where edgeTiles = filter (`isEdgeTile` env) $ Map.keys env 
           env = rd ^. environment
@@ -119,7 +98,6 @@ tileForOutput o = case head (outputs o) of
 
 moveRandom :: RepairDroid -> Maybe RepairDroid
 moveRandom rd@(RepairDroid mem env loc gen history locHistory) = do
-    --newMemory <- trace ("directionInt " ++ show randomDirectionInt) $ runIntCodeWithInput [randomDirectionInt] (clearOutput mem)
     let (newDirection, newGen) = decideDirection rd
     newMemory <- runIntCodeWithInput [intForCardinal newDirection] (clearOutput mem)
     let targetLocation = moveDroid newDirection loc
@@ -128,7 +106,6 @@ moveRandom rd@(RepairDroid mem env loc gen history locHistory) = do
     let newLocation = if tile /= Wall then targetLocation else loc
     let newTravelHistory = if tile /= Wall then newDirection:history else history
     let newLocHistory = if tile /= Wall then Set.insert loc locHistory else locHistory
-    --pure $ trace ("rd: " ++ show rd) $ RepairDroid newMemory newEnv newLocation newGen
     pure $ RepairDroid newMemory newEnv newLocation newGen newTravelHistory newLocHistory
 
 decideDirection :: RepairDroid -> (Cardinal, StdGen)
@@ -204,16 +181,6 @@ simplifyCardinals ps = case firstPair of
     where uVectors = map unitVectorForCardinal ps
           visited = scanl (+) (V2 0 0) uVectors
           firstPair = firstPairIndex visited
-
-firstPairIndex :: Eq a => [a] -> Maybe (Int, Int)
-firstPairIndex = go 0
-    where go :: Eq a => Int -> [a] -> Maybe (Int, Int)
-          go i xs'
-            | null newList = Nothing
-            | length found < 2 = go (i+1) xs'
-            | otherwise = Just (head found, found !! 1)
-                where newList = drop i xs'
-                      found = elemIndices (head newList) xs'
 
 dropBetween :: Int -> Int -> [a] -> [a]
 dropBetween start end xs = take start xs ++ drop end xs
