@@ -108,3 +108,6 @@ firstPairIndex = go 0
                 where newList = drop i xs'
                       found = elemIndices (head newList) xs'
 
+
+dropBetween :: Int -> Int -> [a] -> [a]
+dropBetween start end xs = take start xs ++ drop end xs
